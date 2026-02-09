@@ -232,6 +232,8 @@ export class NumeroService {
         parcelles: rawNumero.parcelles || [],
         certifie: rawNumero.certifie || false,
         communeDeleguee: rawNumero.communeDeleguee,
+        gersId: rawNumero.gersId || null,
+        overtureSource: rawNumero.overtureSource || null,
         ...(rawNumero.updatedAt && { updatedAt: rawNumero.updatedAt }),
         ...(rawNumero.createdAt && { createdAt: rawNumero.createdAt }),
       }));
@@ -305,6 +307,7 @@ export class NumeroService {
       parcelles: createNumeroDto.parcelles || [],
       certifie: createNumeroDto.certifie || false,
       communeDeleguee: createNumeroDto.communeDeleguee || null,
+      gersId: createNumeroDto.gersId || null,
     };
     // Créer l'entité typeorm
     const entityToSave: Numero = this.numerosRepository.create(numero);
@@ -611,13 +614,13 @@ export class NumeroService {
     const baseLocale = await this.baseLocaleService.findOneOrFail(numero.balId);
     if (baseLocale.status !== StatusBaseLocalEnum.PUBLISHED) {
       throw new HttpException(
-        'La Base Adresse Locale doit être publiée pour pouvoir générer le document',
+        'The Local Address Base must be published to generate the document',
         HttpStatus.UNAUTHORIZED,
       );
     }
     if (!numero.certifie) {
       throw new HttpException(
-        'Le numéro doit être certifié pour pouvoir générer le document',
+        'The number must be certified to generate the document',
         HttpStatus.UNAUTHORIZED,
       );
     }
@@ -638,7 +641,7 @@ export class NumeroService {
 
     if (numero.parcelles.length === 0) {
       throw new HttpException(
-        'Le numéro doit être rattaché à au moins une parcelle cadastrale pour pouvoir générer le document',
+        'The number must be linked to at least one cadastral parcel to generate the document',
         HttpStatus.UNAUTHORIZED,
       );
     }

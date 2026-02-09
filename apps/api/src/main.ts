@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { json } from 'express';
 
 import { ApiModule } from './api.module';
 import { WinstonLogger } from '@/shared/modules/logger/logger.service';
@@ -12,10 +13,13 @@ async function bootstrap() {
     logger: new WinstonLogger(Logger),
   });
 
+  // Increase JSON body size limit for Overture bulk imports (up to 100MB)
+  app.use(json({ limit: '100mb' }));
+
   const config = new DocumentBuilder()
     .setTitle('Mes adresses API')
     .setDescription(
-      'API permettant la gestion de bases d’adresses à l’échelon local',
+      'API for managing local address bases',
     )
     .setVersion('2.0')
     .addBearerAuth(

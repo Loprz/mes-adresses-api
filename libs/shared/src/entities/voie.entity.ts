@@ -65,6 +65,14 @@ export class Voie extends GlobalEntity {
   @Column('text', { nullable: true })
   comment?: string | null;
 
+  @ApiProperty({
+    required: false,
+    description:
+      'Overture Maps GERS ID — stable UUID linking this street to Overture transportation segments',
+  })
+  @Column('uuid', { name: 'gers_id', nullable: true })
+  gersId: string | null;
+
   @ApiProperty({ type: () => BaseLocale })
   @ManyToOne(() => BaseLocale, (baseLocale) => baseLocale.voies, {
     onDelete: 'CASCADE',

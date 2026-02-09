@@ -1,0 +1,57 @@
+<html lang='en'>
+  <head>
+    <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Verification Code — National Address Platform</title>
+    <style>
+      body { background-color: #F5F6F7; color: #234361; font-family: "SF UI
+      Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+      Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI
+      Symbol"; margin: auto; padding: 25px; } a { text-decoration: none; }
+      .pin-code { font-size: 36px; font-weight: bold; letter-spacing: 8px;
+      color: #003b80; text-align: center; padding: 20px; margin: 20px 0;
+      background-color: #f0f4f8; border-radius: 8px; font-family: monospace; }
+      .container { background-color: #ebeff3; padding: 25px; border-radius: 4px; }
+      .title { align-items: center; border-bottom: 1px solid #E4E7EB;
+      justify-content: center; margin-top: 35px; min-height: 6em; padding: 10px;
+      text-align: center; } .warning { color: #735c0f; background-color:
+      #fffbdd; padding: 12px; border-radius: 4px; margin-top: 16px; font-size:
+      14px; } img { max-height: 45px; background-color: #F5F6F7; }
+    </style>
+  </head>
+
+  <body>
+    <div>
+      <img
+        src='{{apiUrl}}/public/images/logo-adresse.png'
+        alt='National Address Platform Logo'
+      />
+    </div>
+    <div class='title'>
+      <h2 style='margin:0; mso-line-height-rule:exactly;'>Verification Code</h2>
+      <p>Use the code below to authorize your Local Address Base</p>
+    </div>
+
+    <div class='container'>
+      <p>Your verification code is:</p>
+
+      <div class='pin-code'>{{pinCode}}</div>
+
+      <p>Enter this code in the National Address Platform editor to verify your
+        jurisdiction authority and authorize your Local Address Base for
+        publication.</p>
+
+      <div class='warning'>
+        This code expires in <b>{{expirationMinutes}} minutes</b>. If the code
+        expires, you can request a new one from the editor.
+      </div>
+
+      <p style='margin-top: 20px;'>If you did not request this code, you can
+        safely ignore this email.</p>
+
+      <br />
+      <span><i>The National Address Platform Team</i></span>
+    </div>
+  </body>
+
+</html>

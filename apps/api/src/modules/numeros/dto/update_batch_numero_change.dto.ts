@@ -16,7 +16,7 @@ import { ValidatorBal } from '@/shared/validators/validator_bal.validator';
 export class UpdateBatchNumeroChangeDTO {
   @IsOptional()
   @MaxLength(5000, {
-    message: 'comment:Le champ ne peut pas dépasser 5000 caractères',
+    message: 'comment:Field cannot exceed 5000 characters',
   })
   @ApiProperty({ required: false, nullable: true })
   comment?: string;

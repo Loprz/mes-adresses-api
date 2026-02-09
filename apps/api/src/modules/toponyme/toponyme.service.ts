@@ -133,6 +133,7 @@ export class ToponymeService {
       communeDeleguee: createToponymeDto.communeDeleguee || null,
       positions: createToponymeDto.positions || [],
       parcelles: createToponymeDto.parcelles || [],
+      gersId: (createToponymeDto as any).gersId || null,
     };
     // Créer l'entité typeorm
     const entityToSave: Toponyme = this.toponymesRepository.create(toponyme);

@@ -18,7 +18,7 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 
-import { Habilitation } from '@/shared/modules/api_depot/api-depot.types';
+import { Habilitation } from '@/shared/entities/habilitation.entity';
 
 import { CustomRequest } from '@/lib/types/request.type';
 import { AdminGuard } from '@/lib/guards/admin.guard';
@@ -34,7 +34,7 @@ export class HabilitationController {
 
   @Get('/bases-locales/:baseLocaleId/habilitation/is-valid')
   @ApiOperation({
-    summary: 'Find habiliation is Valid',
+    summary: 'Check if authorization is valid',
     operationId: 'findIsValid',
   })
   @ApiParam({ name: 'baseLocaleId', required: true, type: String })
@@ -55,7 +55,7 @@ export class HabilitationController {
 
   @Get('/bases-locales/:baseLocaleId/habilitation')
   @ApiOperation({
-    summary: 'Find habiliation',
+    summary: 'Get authorization details',
     operationId: 'findHabilitation',
   })
   @ApiParam({ name: 'baseLocaleId', required: true, type: String })
@@ -71,7 +71,7 @@ export class HabilitationController {
 
   @Post('/bases-locales/:baseLocaleId/habilitation')
   @ApiOperation({
-    summary: 'Create habiliation',
+    summary: 'Create authorization',
     operationId: 'createHabilitation',
   })
   @ApiParam({ name: 'baseLocaleId', required: true, type: String })
@@ -86,9 +86,25 @@ export class HabilitationController {
     res.send(habilitation);
   }
 
+  @Get('/bases-locales/:baseLocaleId/habilitation/emails')
+  @ApiOperation({
+    summary: 'Get registered jurisdiction emails for this LAB',
+    operationId: 'getRegisteredEmails',
+  })
+  @ApiParam({ name: 'baseLocaleId', required: true, type: String })
+  @ApiResponse({ status: 200, type: [String] })
+  @ApiBearerAuth('admin-token')
+  @UseGuards(AdminGuard)
+  async getRegisteredEmails(@Req() req: CustomRequest, @Res() res: Response) {
+    const emails = this.habilitationService.getRegisteredEmails(
+      req.baseLocale.commune,
+    );
+    res.status(HttpStatus.OK).json(emails);
+  }
+
   @Post('/bases-locales/:baseLocaleId/habilitation/email/send-pin-code')
   @ApiOperation({
-    summary: 'Send pin code of habilitation',
+    summary: 'Send PIN code for authorization',
     operationId: 'sendPinCodeHabilitation',
   })
   @ApiParam({ name: 'baseLocaleId', required: true, type: String })
@@ -109,8 +125,8 @@ export class HabilitationController {
 
   @Post('/bases-locales/:baseLocaleId/habilitation/email/validate-pin-code')
   @ApiOperation({
-    summary: 'Valide pin code of habiliation',
-    operationId: 'validePinCodeHabilitation',
+    summary: 'Validate PIN code for authorization',
+    operationId: 'validatePinCodeHabilitation',
   })
   @ApiParam({ name: 'baseLocaleId', required: true, type: String })
   @ApiBody({ type: ValidatePinCodeDTO, required: true })

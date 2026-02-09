@@ -24,7 +24,7 @@ export async function getAdresseMairie(
     }
 
     const mainMairie = data.results.find(
-      (result) => !result.nom.toLowerCase().includes('mairie déléguée'),
+      (result) => !result.nom.toLowerCase().includes('branch office'),
     );
     const mairieData = mainMairie || data.results[0];
     const adresseMairie = JSON.parse(mairieData.adresse)[0];
@@ -56,7 +56,7 @@ export async function getEmailsMairie(
     );
 
     if (mairies.length <= 0) {
-      throw new Error('L’adresse email n’est pas trouvé');
+      throw new Error('Email address not found');
     }
 
     const emails: string[] = [
@@ -78,7 +78,7 @@ export async function getEmailsMairie(
     }
 
     throw new Error(
-      `Les adresses emails " ${emails.join(',')} " ne peut pas être utilisée`,
+      `The email addresses "${emails.join(',')}" cannot be used`,
     );
   } catch (error) {
     console.log(

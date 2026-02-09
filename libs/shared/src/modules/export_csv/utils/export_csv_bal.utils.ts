@@ -9,9 +9,9 @@ import { Toponyme } from '@/shared/entities/toponyme.entity';
 import { Numero } from '@/shared/entities/numero.entity';
 import { Voie } from '@/shared/entities/voie.entity';
 import {
-  getCommune,
-  getCommunesPrecedentesByChefLieu,
-} from '@/shared/utils/cog.utils';
+  getJurisdiction,
+  getJurisdictionName,
+} from '@/shared/utils/fips.utils';
 import { roundCoordinate } from '@/shared/utils/coor.utils';
 import { BaseLocale } from '@/shared/entities/base_locale.entity';
 
@@ -43,12 +43,14 @@ type RowType = {
   updatedAt: Date;
   commentNumero?: string;
   commentVoie?: string;
+  gersId?: string;
 };
 
 type CsvRowType = {
   id_ban_commune: string;
   id_ban_toponyme: string;
   id_ban_adresse: string;
+  id_gers?: string;
   cle_interop: string;
   voie_nom: string;
   lieudit_complement_nom: string;
@@ -113,11 +115,12 @@ function getCommuneDelegueeNom(
   codeCommune: string,
   codeCommuneDeleguee?: string,
 ): string {
-  const anciennesCommunes = getCommunesPrecedentesByChefLieu(codeCommune);
-  const communeDeleguee = anciennesCommunes.find(
-    (c) => c.code === codeCommuneDeleguee,
-  );
-  return communeDeleguee?.nom;
+  // In the US model, delegated jurisdictions are not used
+  // but we keep the function for CSV format compatibility
+  if (codeCommuneDeleguee) {
+    return getJurisdictionName(codeCommuneDeleguee) || '';
+  }
+  return '';
 }
 
 /* eslint camelcase: off */
@@ -132,13 +135,14 @@ function createRow(obj: RowType, withComment: boolean): CsvRowType {
     id_ban_commune: obj.banIds.commune,
     id_ban_toponyme: obj.banIds.toponyme,
     id_ban_adresse: obj.banIds.adresse || '',
+    id_gers: obj.gersId || '',
     voie_nom: obj.nomVoie,
     lieudit_complement_nom: obj.nomToponyme || '',
     numero: obj.numero.toString() || '',
     suffixe: obj.suffixe || '',
     certification_commune: toCsvBoolean(obj.certifie),
     commune_insee: obj.codeCommune,
-    commune_nom: getCommune(obj.codeCommune)?.nom,
+    commune_nom: getJurisdictionName(obj.codeCommune) || '',
     commune_deleguee_insee: obj.communeDeleguee || null,
     commune_deleguee_nom:
       obj.communeDeleguee &&
@@ -210,7 +214,7 @@ export async function exportBalToCsv(
 
       if (!toponyme) {
         throw new Error(
-          `Toponyme ${n.toponyme} introuvable dans la base de données`,
+          `Place name ${n.toponyme} not found in the database`,
         );
       }
     }
@@ -239,6 +243,7 @@ export async function exportBalToCsv(
           position: p,
           commentNumero: n.comment,
           commentVoie: v.comment,
+          gersId: n.gersId,
         });
       });
     }
@@ -262,6 +267,7 @@ export async function exportBalToCsv(
           nomVoieAlt: t.nomAlt || null,
           parcelles: t.parcelles,
           position: p,
+          gersId: t.gersId,
         });
       });
     } else {
@@ -279,6 +285,7 @@ export async function exportBalToCsv(
         nomVoie: t.nom,
         nomVoieAlt: t.nomAlt || null,
         parcelles: t.parcelles,
+        gersId: t.gersId,
       });
     }
   });

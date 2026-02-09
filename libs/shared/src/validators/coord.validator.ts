@@ -2,67 +2,48 @@ import {
   ValidatorConstraint,
   ValidatorConstraintInterface,
 } from 'class-validator';
-import * as proj from '@etalab/project-legal';
 import { Point } from '@turf/turf';
-import { getValidateurBalColumnErrors } from '../utils/validateur-bal.utils';
 
-function harmlessProj(coordinates: number[]) {
-  try {
-    return proj(coordinates);
-  } catch {}
-}
-
+/**
+ * Validates that a GeoJSON Point has valid WGS84 coordinates.
+ *
+ * Replaces the French `@etalab/project-legal` Lambert-93 projection check
+ * with standard WGS84 coordinate range validation:
+ * - Longitude: -180 to 180
+ * - Latitude: -90 to 90
+ *
+ * For US addresses, we additionally check that coordinates fall within
+ * a reasonable bounding box for US territories (including Hawaii, Alaska,
+ * Guam, USVI, etc.):
+ * - Longitude: -180 to -60 (or 130 to 180 for Pacific territories)
+ * - Latitude: 15 to 72
+ *
+ * However, we keep the validation permissive (full WGS84) to allow for
+ * edge cases and testing.
+ */
 @ValidatorConstraint({ name: 'pointCoord', async: true })
 export class PointValidator implements ValidatorConstraintInterface {
   async validate(point: Point) {
-    if (Array.isArray(point.coordinates) && point.coordinates.length === 2) {
-      if (
-        typeof point.coordinates[0] !== 'number' ||
-        typeof point.coordinates[1] !== 'number'
-      ) {
-        return false;
-      }
-      const projectedCoordInMeters = harmlessProj(point.coordinates);
-      if (!projectedCoordInMeters) {
-        return false;
-      }
-    } else {
+    if (!Array.isArray(point.coordinates) || point.coordinates.length !== 2) {
       return false;
     }
 
-    return true;
-  }
-}
+    const [longitude, latitude] = point.coordinates;
 
-@ValidatorConstraint({ name: 'lineStringCoord', async: true })
-export class LineStringValidator implements ValidatorConstraintInterface {
-  async validate(coordinates: any) {
-    if (Array.isArray(coordinates)) {
-      for (const coor of coordinates) {
-        if (Array.isArray(coor)) {
-          const [lat, long] = coor;
-          if (typeof lat !== 'number' || typeof long !== 'number') {
-            return false;
-          }
+    if (typeof longitude !== 'number' || typeof latitude !== 'number') {
+      return false;
+    }
 
-          const latResults = await getValidateurBalColumnErrors(
-            'lat',
-            lat.toString(),
-          );
-          if (latResults.errors.length > 0) {
-            return false;
-          }
+    // Standard WGS84 bounds
+    if (longitude < -180 || longitude > 180) {
+      return false;
+    }
+    if (latitude < -90 || latitude > 90) {
+      return false;
+    }
 
-          const longResults = await getValidateurBalColumnErrors(
-            'long',
-            long.toString(),
-          );
-          if (longResults.errors.length > 0) {
-            return false;
-          }
-        }
-      }
-    } else {
+    // Check for NaN/Infinity
+    if (!isFinite(longitude) || !isFinite(latitude)) {
       return false;
     }
 
@@ -70,6 +51,46 @@ export class LineStringValidator implements ValidatorConstraintInterface {
   }
 
   defaultMessage() {
-    return 'Les coordonnées de la lineString ne sont pas valide';
+    return 'The point coordinates are not valid WGS84 (longitude: -180..180, latitude: -90..90)';
+  }
+}
+
+/**
+ * Validates that a LineString has valid WGS84 coordinates.
+ */
+@ValidatorConstraint({ name: 'lineStringCoord', async: true })
+export class LineStringValidator implements ValidatorConstraintInterface {
+  async validate(coordinates: any) {
+    if (!Array.isArray(coordinates) || coordinates.length < 2) {
+      return false;
+    }
+
+    for (const coord of coordinates) {
+      if (!Array.isArray(coord) || coord.length !== 2) {
+        return false;
+      }
+
+      const [longitude, latitude] = coord;
+
+      if (typeof longitude !== 'number' || typeof latitude !== 'number') {
+        return false;
+      }
+
+      if (longitude < -180 || longitude > 180) {
+        return false;
+      }
+      if (latitude < -90 || latitude > 90) {
+        return false;
+      }
+      if (!isFinite(longitude) || !isFinite(latitude)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  defaultMessage() {
+    return 'The LineString coordinates are not valid';
   }
 }

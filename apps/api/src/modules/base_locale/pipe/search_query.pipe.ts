@@ -10,7 +10,7 @@ import {
   BaseLocale,
   StatusBaseLocalEnum,
 } from '@/shared/entities/base_locale.entity';
-import { isCommune } from '@/shared/utils/cog.utils';
+import { isValidFips } from '@/shared/utils/fips.utils';
 
 import { checkValidEmail } from '@/modules/base_locale/utils/base_locale.utils';
 import { SearchBaseLocalQuery } from '../dto/search_base_locale.query';
@@ -33,14 +33,14 @@ export class SearchQueryPipe implements PipeTransform {
 
     if (!Number.isInteger(res.limit) || res.limit > 100 || res.limit <= 0) {
       throw new HttpException(
-        'La valeur du champ "limit" doit un entier compris en 1 et 100 (défaut : 20)',
+        'The "limit" field must be an integer between 1 and 100 (default: 20)',
         HttpStatus.BAD_REQUEST,
       );
     }
 
     if (!Number.isInteger(res.offset) || res.offset < 0) {
       throw new HttpException(
-        'La valeur du champ "offset" doit être un entier positif (défaut : 0)',
+        'The "offset" field must be a positive integer (default: 0)',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -51,17 +51,17 @@ export class SearchQueryPipe implements PipeTransform {
       res.filters.deletedAt = Not(IsNull());
     } else if (query.deleted) {
       throw new HttpException(
-        'La valeur du champ "deleted" est invalide',
+        'The "deleted" field value is invalid',
         HttpStatus.BAD_REQUEST,
       );
     }
 
     if (query.commune) {
-      if (typeof query.commune === 'string' && isCommune(query.commune)) {
+      if (typeof query.commune === 'string' && isValidFips(query.commune)) {
         res.filters.commune = query.commune;
       } else {
         throw new HttpException(
-          'La valeur du champ "commune" est invalide',
+          'The "commune" field must be a valid US FIPS code',
           HttpStatus.BAD_REQUEST,
         );
       }
@@ -72,7 +72,7 @@ export class SearchQueryPipe implements PipeTransform {
         res.email = query.email.toLowerCase();
       } else {
         throw new HttpException(
-          'La valeur du champ "email" est invalide',
+          'The "email" field value is invalid',
           HttpStatus.BAD_REQUEST,
         );
       }
@@ -91,7 +91,7 @@ export class SearchQueryPipe implements PipeTransform {
         res.filters.status = query.status as StatusBaseLocalEnum;
       } else {
         throw new HttpException(
-          'La valeur du champ "status" est invalide',
+          'The "status" field value is invalid',
           HttpStatus.BAD_REQUEST,
         );
       }

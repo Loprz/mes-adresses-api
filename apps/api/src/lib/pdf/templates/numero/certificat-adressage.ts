@@ -18,7 +18,7 @@ export async function generateCertificatAdressage(
   const { numero, baseLocale, voie, toponyme, emetteur, destinataire } = params;
 
   const doc = new PdfDocument();
-  await doc.initDocument("Certificat d'adressage", {
+  await doc.initDocument('Address Certificate', {
     nom: baseLocale.communeNom,
     code: baseLocale.commune,
   });
@@ -27,19 +27,19 @@ export async function generateCertificatAdressage(
     .addText(
       `${
         emetteur
-          ? `Je, soussigné(e) ${emetteur}, atteste que `
-          : `Le Maire de ${baseLocale.communeNom} atteste que `
+          ? `I, the undersigned ${emetteur}, certify that `
+          : `The Jurisdiction Authority of ${baseLocale.communeNom} certifies that `
       }${
         destinataire
-          ? `la propriété appartenant à ${destinataire} désignée ci-dessous `
-          : `l'adresse désignée ci-dessous `
-      }est certifiée dans la Base Adresse Locale de ${baseLocale.communeNom}.`,
+          ? `the property belonging to ${destinataire} designated below `
+          : `the address designated below `
+      }is certified in the Local Address Base of ${baseLocale.communeNom}.`,
       { align: 'left' },
     )
     .addGenericTable(
       [
-        'N° de voirie et désignation de la voie',
-        'N° parcelle(s) cadastrale(s)',
+        'Street number and street name',
+        'Parcel number(s)',
       ],
       [
         [
@@ -55,11 +55,11 @@ export async function generateCertificatAdressage(
     .addNewLine()
     .addNewLine()
     .addText(
-      'En foi de quoi, le présent certificat est délivré au demandeur pour servir et valoir ce que de droit.',
+      'In witness whereof, this certificate is issued to the applicant for all lawful purposes.',
       { align: 'left' },
     )
     .addText(
-      "Il ne vaut pas : autorisation d'urbanisme, droit de passage, servitude, droit de propriété, certificat de résidence ou d'hébergement.",
+      'This certificate does not constitute: a building permit, right of way, easement, proof of property ownership, or certificate of residency.',
       { align: 'left' },
     )
     .render();

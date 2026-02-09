@@ -1,9 +1,9 @@
-<html lang='fr'>
+<html lang='en'>
 
   <head>
     <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
     <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-    <title>Publication de votre Base Adresse Locale</title>
+    <title>Your Local Address Base Has Been Published</title>
     <style>
       body { background-color: #F5F6F7; color: #234361; font-family: "SF UI
       Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
@@ -23,110 +23,100 @@
     <div>
       <img
         src='{{apiUrl}}/public/images/logo-adresse.png'
-        alt='Logo République Française'
+        alt='National Address Platform Logo'
       />
     </div>
     <div class='title'>
-      <h2 style='margin:0; mso-line-height-rule:exactly;'>Félicitations !</h2><br
+      <h2 style='margin:0; mso-line-height-rule:exactly;'>Congratulations!</h2><br
       />
-      <h3 style='margin:0; mso-line-height-rule:exactly;'>Votre Base Adresse
-        Locale est désormais publiée !</h3>
+      <h3 style='margin:0; mso-line-height-rule:exactly;'>Your Local Address
+        Base has been published!</h3>
     </div>
 
     <div class='container'>
       <section>
-        <h4>✨ Un réel bénéfice pour votre commune</h4>
-        <p>Les adresses de votre commune sont maintenant à jour et viennent
-          alimenter
-          <b>les référentiels nationaux</b>.</p>
-        <p>Il est désormais plus simple pour vos administrés d'être&nbsp;:</p>
+        <h4>A Real Benefit for Your Jurisdiction</h4>
+        <p>The addresses in your jurisdiction are now up to date and feed
+          into <b>the national address database</b>.</p>
+        <p>It is now easier for your residents to:</p>
         <ul>
-          <li>déclarés auprès des fournisseurs d'eau et d'énergies ⚡️</li>
-          <li>éligibles à la fibre 🖥</li>
-          <li>livrés 📦</li>
-          <li>ou même secourus 🚑</li>
+          <li>Register with utility providers (water, electric, gas)</li>
+          <li>Qualify for broadband and fiber internet service</li>
+          <li>Receive mail and package deliveries</li>
+          <li>Be located by emergency services (911)</li>
         </ul>
       </section>
 
       <section>
-        <h4>🔍 Où consulter vos adresses ?</h4>
+        <h4>Where Can You View Your Addresses?</h4>
         <p>
-          Vos adresses seront intégrées à la Base Adresse Nationale et
-          disponibles d’ici
-          <b>quelques heures</b>.<br />
-          Elles seront consultables directement depuis notre
-          <b>carte interactive</b>
-          ici&nbsp;:
+          Your addresses will be integrated into the National Address Database and
+          available within <b>a few hours</b>.<br />
+          They will be viewable directly from our
+          <b>interactive map</b> here:
         </p>
         <span class='forceWhiteLink'><button><a
-              href='https://adresse.data.gouv.fr/base-adresse-nationale/{{codeCommune}}'
+              href='{{apiUrl}}/national-address-database/{{codeCommune}}'
               target='blank'
-            >Consulter la Base Adresse Nationale</a></button></span>
+            >View the National Address Database</a></button></span>
         <p>
-          Vous pourrez suivre l'état de vos adresses sur la page d'information
-          par commune et télécharger la Base Adresse Nationale de votre commune
-          ici&nbsp;:
+          You can track the status of your addresses on the jurisdiction
+          information page and download the National Address Database for your
+          jurisdiction here:
         </p>
         <span class='forceWhiteLink'><button><a
-              href='https://adresse.data.gouv.fr/commune/{{codeCommune}}'
+              href='{{apiUrl}}/jurisdiction/{{codeCommune}}'
               target='blank'
-            >Consulter ma page commune</a></button></span>
+            >View my jurisdiction page</a></button></span>
       </section>
 
       <section>
-        <h4>🚀 Continuez l’édition de cette Base Adresse Locale</h4>
+        <h4>Continue Editing This Local Address Base</h4>
         <p>
-          Si vous souhaitez
-          <b>mettre à jour</b>
-          vos adresses ou effecter des
-          <b>corrections</b>, continuer simplement l’édition de cette Base
-          Adresse Locale.<br />
-          Les changements seront
-          <b>enregistrés automatiquement</b>
-          et transmis à la Base Adresse Nationale.
+          If you would like to <b>update</b> your addresses or make
+          <b>corrections</b>, simply continue editing this Local Address
+          Base.<br />
+          Changes will be <b>saved automatically</b>
+          and transmitted to the National Address Database.
         </p>
 
-        <p>Vous pouvez continuer l’adressage de votre
-          <b><i>Base Adresse Locale</i></b>
-          ici&nbsp;:
+        <p>You can continue managing your
+          <b><i>Local Address Base</i></b> here:
         </p>
         <span class='forceWhiteLink'><button><a
               href='{{editorUrl}}'
               target='blank'
-            >Gérer mes adresses</a></button></span>
+            >Manage my addresses</a></button></span>
       </section>
 
       <section>
-        <h4>🇫🇷 Vous n’êtes pas seul</h4>
+        <h4>You Are Not Alone</h4>
         <p>
-          <b>Tous les jours</b>
-          de nouvelles Bases Adresse Locales viennent alimenter la Base Adresse
-          Nationale comme vous venez de le faire.<br />
-          Découvrez l’état du
-          <b>déploiement des Bases Adresse Locales à l’échelle nationale</b>
-          ici&nbsp;:
+          <b>Every day</b>, new Local Address Bases are contributing to the
+          National Address Database, just as you have done.<br />
+          See the <b>nationwide deployment of Local Address Bases</b> here:
         </p>
         <span class='forceWhiteLink'><button><a
-              href='https://adresse.data.gouv.fr/deploiement-bal'
+              href='{{apiUrl}}/lab-deployment'
               target='blank'
-            >Carte de couverture des BAL</a></button></span>
+            >LAB Coverage Map</a></button></span>
       </section>
     </div>
   </body>
 
   <footer>
-    <p>En cas de problème, l'accès à la
-      <b><i>Base Adresse Locale</i></b>
-      peut être réinitialisé sur demande.</p>
+    <p>If you encounter any issues, access to the
+      <b><i>Local Address Base</i></b>
+      can be reset upon request.</p>
 
-    <span><i>L’équipe adresse.data.gouv.fr</i></span>
+    <span><i>The National Address Platform Team</i></span>
     <p class='infos'>
       <small>
-        <i>Jeton d’administration (information expert)&nbsp;:
+        <i>Administration token (expert information):
           {{baseLocale.token}}</i>
       </small>
-      <div>Si le bouton ci-dessus ne fonctionne pas, collez l’URL suivante dans
-        la barre d’adresse de votre navigateur :
+      <div>If the button above does not work, paste the following URL into
+        your browser's address bar:
         <b>{{editorUrl}}</b></div>
     </p>
   </footer>

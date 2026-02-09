@@ -1,0 +1,59 @@
+{
+  "_description": "Pre-registered official jurisdiction emails for authorization verification. These are the only emails that can receive PIN codes for LAB authorization. Add real emails as jurisdictions onboard.",
+  "counties": {
+    "06019": {
+      "name": "Fresno County, CA",
+      "emails": ["clerk@co.fresno.ca.us", "gis@co.fresno.ca.us"]
+    },
+    "06037": {
+      "name": "Los Angeles County, CA",
+      "emails": ["clerk@lacounty.gov"]
+    },
+    "06073": {
+      "name": "San Diego County, CA",
+      "emails": ["clerk@sdcounty.ca.gov"]
+    },
+    "06085": {
+      "name": "Santa Clara County, CA",
+      "emails": ["clerk@ceo.sccgov.org"]
+    },
+    "17031": {
+      "name": "Cook County, IL",
+      "emails": ["clerk@cookcountyil.gov"]
+    },
+    "36061": {
+      "name": "New York County, NY",
+      "emails": ["clerk@manhattanbp.nyc.gov"]
+    },
+    "48201": {
+      "name": "Harris County, TX",
+      "emails": ["clerk@harriscountytx.gov"]
+    }
+  },
+  "places": {
+    "0627000": {
+      "name": "Fresno city, CA",
+      "emails": ["clerk@fresno.gov", "gis@fresno.gov"]
+    },
+    "0644000": {
+      "name": "Los Angeles city, CA",
+      "emails": ["clerk@lacity.org"]
+    },
+    "0666000": {
+      "name": "San Diego city, CA",
+      "emails": ["clerk@sandiego.gov"]
+    },
+    "0668000": {
+      "name": "San Jose city, CA",
+      "emails": ["clerk@sanjoseca.gov"]
+    },
+    "3651000": {
+      "name": "New York city, NY",
+      "emails": ["clerk@council.nyc.gov"]
+    },
+    "4835000": {
+      "name": "Houston city, TX",
+      "emails": ["clerk@houstontx.gov"]
+    }
+  }
+}

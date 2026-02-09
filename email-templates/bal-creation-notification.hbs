@@ -1,8 +1,8 @@
-<html lang='fr'>
+<html lang='en'>
   <head>
     <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
     <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-    <title>Création d’une nouvelle Base Adresse Locale</title>
+    <title>New Local Address Base Created</title>
     <style>
       body { background-color: #F5F6F7; color: #234361; font-family: "SF UI
       Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
@@ -22,46 +22,46 @@
     <div>
       <img
         src='{{apiUrl}}/public/images/logo-adresse.png'
-        alt='Logo République Française'
+        alt='National Address Platform Logo'
       />
     </div>
     <div class='title'>
-      <h2 style='margin:0; mso-line-height-rule:exactly;'>Félicitations !</h2><br
+      <h2 style='margin:0; mso-line-height-rule:exactly;'>Congratulations!</h2><br
       />
-      <h3 style='margin:0; mso-line-height-rule:exactly;'>Vous venez de créer
-        une nouvelle Base Adresse Locale !</h3>
+      <h3 style='margin:0; mso-line-height-rule:exactly;'>You have created
+        a new Local Address Base!</h3>
     </div>
 
     <div class='container'>
-      <p><b>Nom de la Base Adresse Locale&nbsp;: </b>
+      <p><b>Local Address Base name: </b>
         {{#if baseLocale.nom}}
           {{baseLocale.nom}}
         {{else}}
-          non renseigné
+          not specified
         {{/if}}
       </p>
 
-      <p>Vous pouvez dès maintenant administrer votre
-        <b><i>Base Adresse Locale</i></b>
-        à partir de la page suivante:</p>
+      <p>You can now manage your
+        <b><i>Local Address Base</i></b>
+        from the following page:</p>
       <span class='forceWhiteLink'>
         <button>
-          <a href='{{editorUrl}}' target='blank'>Gérer mes adresses</a>
+          <a href='{{editorUrl}}' target='blank'>Manage my addresses</a>
         </button>
       </span>
-      <p>N'hésitez pas à faire suivre ce courriel à toute personne de confiance
-        qui pourrait être amenée à intervenir sur les adresses.</p>
-      <p>En cas de problème, l'accès à la
-        <b><i>Base Adresse Locale</i></b>
-        peut être réinitialisé sur demande.</p>
+      <p>Feel free to forward this email to any trusted person
+        who may need to manage these addresses.</p>
+      <p>If you encounter any issues, access to the
+        <b><i>Local Address Base</i></b>
+        can be reset upon request.</p>
 
-      <span><i>L’équipe adresse.data.gouv.fr</i></span>
+      <span><i>The National Address Platform Team</i></span>
       <p class='infos'>
         <small>
-          <i>Jeton d’administration (information expert)&nbsp;:
+          <i>Administration token (expert information):
             {{baseLocale.token}}</i>
-          <div>Si le bouton ci-dessus ne fonctionne pas, collez l’URL suivante
-            dans la barre d’adresse de votre navigateur :
+          <div>If the button above does not work, paste the following URL
+            into your browser's address bar:
             <b>{{editorUrl}}</b></div>
         </small>
       </p>

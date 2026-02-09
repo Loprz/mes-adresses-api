@@ -35,13 +35,21 @@ export class Toponyme extends GlobalEntity {
     name: 'commune_deleguee',
     default: null,
     nullable: true,
-    length: 5,
+    length: 7,
   })
   communeDeleguee: string | null;
 
   @ApiProperty()
   @Column('text', { nullable: true, array: true })
   parcelles?: string[] | null;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'Overture Maps GERS ID — stable UUID linking this place name to the Overture places dataset',
+  })
+  @Column('uuid', { name: 'gers_id', nullable: true })
+  gersId: string | null;
 
   @ApiProperty({ type: () => Position, isArray: true })
   @OneToMany(() => Position, (position) => position.toponyme, {

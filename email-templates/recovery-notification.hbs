@@ -1,8 +1,8 @@
-<html lang='fr'>
+<html lang='en'>
   <head>
     <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
     <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-    <title>Demande de récupération de vos Bases Adresses Locales</title>
+    <title>Request to Recover Your Local Address Bases</title>
     <style>
       body { background-color: #F5F6F7; color: #234361; font-family: "SF UI
       Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
@@ -24,26 +24,26 @@
     <div>
       <img
         src='{{apiUrl}}/public/images/logo-adresse.png'
-        alt='Logo République Française'
+        alt='National Address Platform Logo'
       />
     </div>
     <div class='title'>
-      <h2 style='margin:0; mso-line-height-rule:exactly;'>Demande de
-        récupération de vos Bases Adresses Locales</h2><br />
-      <h3 style='margin:0; mso-line-height-rule:exactly;'>Cliquez sur le lien
-        associé pour récupérer une Base Adresse Locale</h3>
+      <h2 style='margin:0; mso-line-height-rule:exactly;'>Request to
+        Recover Your Local Address Bases</h2><br />
+      <h3 style='margin:0; mso-line-height-rule:exactly;'>Click the associated
+        link to recover a Local Address Base</h3>
     </div>
 
     <div class='container'>
       {{#if recoveryBals}}
-        <h3>Liste des Bases Adresses Locales associées à votre adresse email :</h3>
+        <h3>Local Address Bases associated with your email address:</h3>
         <ul>
           {{#each recoveryBals}}
             <li style='margin: 1em 0;'>
               <span class='status {{this.status}}'>{{this.statusFr}}</span>
               {{this.nom}}
-              (créé le
-              {{this.createdAt}}) :
+              (created on
+              {{this.createdAt}}):
               <a href='{{this.recoveryUrl}}'>{{this.recoveryUrl}}</a>
             </li>
           {{/each}}
@@ -51,16 +51,14 @@
       {{/if}}
 
       {{#if deletedBals}}
-        <h3>Liste des Bases Adresses Locales supprimées, associées à votre
-          adresse email :</h3>
+        <h3>Deleted Local Address Bases associated with your email address:</h3>
         <ul>
           {{#each deletedBals}}
             <li style='margin: 1em 0;'>
               <span class='status {{this.status}}'>{{this.statusFr}}</span>
-              (le
+              (on
               {{this.deletedAt}})
-              {{this.nom}}
-              :
+              {{this.nom}}:
               <a
                 href='{{this.deletedRecoveryUrl}}'
               >{{this.deletedRecoveryUrl}}</a>
@@ -69,14 +67,14 @@
         </ul>
       {{/if}}
 
-      <h5>Pourquoi ce courriel vous est envoyé ?</h5>
+      <h5>Why did you receive this email?</h5>
       <p class='explaination'>
-        Une personne souhaite récupérer l’accès à ses Bases Adresses Locales et
-        a communiqué cette adresse de courrier électronique. Si vous n'êtes pas
-        à l'origine de cette demande, merci d'ignorer ce courriel.
+        Someone has requested to recover access to their Local Address Bases and
+        provided this email address. If you did not initiate this request,
+        please ignore this email.
       </p>
 
-      <div class='signature'><i>L’équipe adresse.data.gouv.fr</i></div>
+      <div class='signature'><i>The National Address Platform Team</i></div>
     </div>
   </body>
 

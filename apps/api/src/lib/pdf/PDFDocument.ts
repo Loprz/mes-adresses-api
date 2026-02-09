@@ -68,9 +68,9 @@ export class PdfDocument {
     return this.addNewLine()
       .addNewLine()
       .addText(
-        `${commune.nom}, le ${new Date().toLocaleDateString('fr-Fr', {
-          day: '2-digit',
+        `${commune.nom}, ${new Date().toLocaleDateString('en-US', {
           month: 'long',
+          day: 'numeric',
           year: 'numeric',
         })}`,
         {

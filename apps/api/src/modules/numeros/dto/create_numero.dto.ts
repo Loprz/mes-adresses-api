@@ -8,6 +8,7 @@ import {
   ValidateNested,
   IsMongoId,
   IsNotEmpty,
+  IsUUID,
   Max,
   Min,
   IsInt,
@@ -18,10 +19,10 @@ import { ValidatorCogCommune } from '@/shared/validators/cog.validator';
 import { ValidatorBal } from '@/shared/validators/validator_bal.validator';
 
 export class CreateNumeroDTO {
-  @IsNotEmpty({ message: 'numero:Le champ numero est obligatoire' })
-  @IsInt({ message: 'numero:Le champ numéro doit être un entier' })
-  @Min(0, { message: 'numero:Le champ numéro doit être 0 au minimum' })
-  @Max(99998, { message: 'numero:Le champ numéro doit être inférieur à 99998' })
+  @IsNotEmpty({ message: 'numero:The number field is required' })
+  @IsInt({ message: 'numero:The number field must be an integer' })
+  @Min(0, { message: 'numero:The number field must be at least 0' })
+  @Max(99998, { message: 'numero:The number field must be less than 99998' })
   @ApiProperty({ required: true, nullable: false })
   numero: number;
 
@@ -32,7 +33,7 @@ export class CreateNumeroDTO {
 
   @IsOptional()
   @MaxLength(5000, {
-    message: 'comment:Le champ ne peut pas dépasser 5000 caractères',
+    message: 'comment:Field cannot exceed 5000 characters',
   })
   @ApiProperty({ required: false, nullable: true })
   comment?: string;
@@ -66,4 +67,13 @@ export class CreateNumeroDTO {
     nullable: false,
   })
   positions?: Position[];
+
+  @IsOptional()
+  @IsUUID('4', { message: 'gersId:Must be a valid UUID v4 (Overture GERS ID)' })
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    description: 'Overture Maps GERS ID for address stability and cross-referencing',
+  })
+  gersId?: string;
 }

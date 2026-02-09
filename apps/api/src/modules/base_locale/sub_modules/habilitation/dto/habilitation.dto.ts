@@ -1,17 +1,13 @@
 import {
   Strategy,
-  Habilitation,
   StatusHabilitationEnum,
   TypeStrategyEnum,
-} from '@/shared/modules/api_depot/api-depot.types';
+} from '@/shared/entities/habilitation.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class StrategyDTO {
   @ApiProperty({ enum: TypeStrategyEnum })
   type: TypeStrategyEnum;
-
-  @ApiProperty()
-  pinCode: string;
 
   @ApiProperty()
   pinCodeExpiration: Date;
@@ -23,9 +19,12 @@ export class StrategyDTO {
   createdAt: Date;
 }
 
-export class HabilitationDTO implements Habilitation {
+export class HabilitationDTO {
   @ApiProperty()
   id: string;
+
+  @ApiProperty()
+  balId: string;
 
   @ApiProperty()
   codeCommune: string;
@@ -36,11 +35,14 @@ export class HabilitationDTO implements Habilitation {
   @ApiProperty({ type: () => StrategyDTO })
   strategy?: Strategy;
 
-  @ApiProperty()
-  client?: string;
-
   @ApiProperty({ enum: StatusHabilitationEnum })
   status: StatusHabilitationEnum;
+
+  @ApiProperty()
+  acceptedAt?: Date;
+
+  @ApiProperty()
+  rejectedAt?: Date;
 
   @ApiProperty()
   createdAt?: Date;

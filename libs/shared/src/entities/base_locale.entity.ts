@@ -4,7 +4,7 @@ import { AfterLoad, Column, Entity, OneToMany } from 'typeorm';
 import { Voie } from './voie.entity';
 import { Numero } from './numero.entity';
 import { Toponyme } from './toponyme.entity';
-import { getCommune } from '../utils/cog.utils';
+import { getJurisdiction, getJurisdictionName } from '../utils/fips.utils';
 
 export enum StatusBaseLocalEnum {
   DRAFT = 'draft',
@@ -66,7 +66,7 @@ export class BaseLocale extends GlobalEntity {
   communeNomsAlt: Record<string, string> | null;
 
   @ApiProperty()
-  @Column('varchar', { nullable: false, length: 5 })
+  @Column('varchar', { nullable: false, length: 7 })
   commune: string;
 
   @ApiProperty()
@@ -107,6 +107,6 @@ export class BaseLocale extends GlobalEntity {
 
   @AfterLoad()
   getCommuneNom?(): void {
-    this.communeNom = getCommune(this.commune)?.nom;
+    this.communeNom = getJurisdictionName(this.commune);
   }
 }

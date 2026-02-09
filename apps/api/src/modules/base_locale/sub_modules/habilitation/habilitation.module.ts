@@ -1,6 +1,7 @@
 import { Module, MiddlewareConsumer, forwardRef, Logger } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { ApiDepotModule } from '@/shared/modules/api_depot/api_depot.module';
+import { Habilitation } from '@/shared/entities/habilitation.entity';
 
 import { HabilitationController } from './habilitation.controller';
 import { BaseLocaleMiddleware } from '@/modules/base_locale/base_locale.middleware';
@@ -10,7 +11,7 @@ import { PublicationModule } from '@/shared/modules/publication/publication.modu
 
 @Module({
   imports: [
-    ApiDepotModule,
+    TypeOrmModule.forFeature([Habilitation]),
     forwardRef(() => BaseLocaleModule),
     PublicationModule,
   ],

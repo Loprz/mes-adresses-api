@@ -6,6 +6,7 @@ import {
   ValidateNested,
   IsNotEmptyObject,
   IsNotEmpty,
+  IsUUID,
 } from 'class-validator';
 
 import { ValidatorBal } from '@/shared/validators/validator_bal.validator';
@@ -13,7 +14,7 @@ import { Position } from '@/shared/entities/position.entity';
 import { ValidatorCogCommune } from '@/shared/validators/cog.validator';
 
 export class CreateToponymeDTO {
-  @IsNotEmpty({ message: 'voie_nom:Le champ nom est obligatoire' })
+  @IsNotEmpty({ message: 'voie_nom:The name field is required' })
   @Validate(ValidatorBal, ['voie_nom'])
   @ApiProperty({ required: true, nullable: false })
   nom: string;
@@ -36,7 +37,7 @@ export class CreateToponymeDTO {
   @IsOptional()
   @ValidateNested({
     each: true,
-    message: 'positions:Doit être un tableau de position',
+    message: 'positions:Must be an array of positions',
   })
   @Type(() => Position)
   @ApiProperty({
@@ -46,4 +47,13 @@ export class CreateToponymeDTO {
     nullable: false,
   })
   positions?: Position[];
+
+  @IsOptional()
+  @IsUUID('4', { message: 'gersId:Must be a valid UUID v4 (Overture GERS ID)' })
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    description: 'Overture Maps GERS ID for place name cross-referencing',
+  })
+  gersId?: string;
 }

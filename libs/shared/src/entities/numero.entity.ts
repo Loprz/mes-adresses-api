@@ -71,9 +71,25 @@ export class Numero extends GlobalEntity {
     name: 'commune_deleguee',
     default: null,
     nullable: true,
-    length: 5,
+    length: 7,
   })
   communeDeleguee: string | null;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'Overture Maps GERS ID — stable UUID linking this address to the Overture address dataset',
+  })
+  @Column('uuid', { name: 'gers_id', nullable: true })
+  gersId: string | null;
+
+  @ApiProperty({
+    required: false,
+    description:
+      'Overture Maps provenance metadata (version, sources, importedAt, confidence)',
+  })
+  @Column('jsonb', { name: 'overture_source', nullable: true })
+  overtureSource: Record<string, any> | null;
 
   @ApiProperty({ type: () => Position, isArray: true })
   @OneToMany(() => Position, (position) => position.numero, {

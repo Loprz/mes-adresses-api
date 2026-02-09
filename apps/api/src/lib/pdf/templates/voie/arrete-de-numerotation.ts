@@ -33,38 +33,38 @@ export async function generateArreteDeNumerotation(
   const doc = new PdfDocument();
   const maxWidth = doc.getDocInstance().internal.pageSize.width - 2 * xMargin;
 
-  await doc.initDocument('Arrêté de numérotation', {
+  await doc.initDocument('Street Numbering Order', {
     nom: baseLocale.communeNom,
     code: baseLocale.commune,
   });
 
   doc
-    .addText(`Le Maire de la commune de ${baseLocale.communeNom},`, {
+    .addText(`The Jurisdiction Authority of ${baseLocale.communeNom},`, {
       align: 'left',
     })
     .addText(
-      `Vu le code général des collectivités territoriales et notamment son article L.2213-28,`,
+      `Pursuant to the authority granted under applicable state and local addressing ordinances,`,
       {
         align: 'justify',
         maxWidth,
       },
     )
     .addText(
-      `Vu l'article R.610-5 du code pénal qui prévoit que la violation des interdictions ou le manquement aux obligations édictées par les décrets et arrêtés de police sont punis de l'amende prévue pour les contraventions de la 1ere classe,`,
+      `Whereas the numbering of structures within the jurisdiction is a public safety measure necessary for emergency response, mail delivery, and utility services,`,
       {
         align: 'justify',
         maxWidth,
       },
     )
     .addText(
-      `Considérant que le numérotage des habitations en agglomération constitue une mesure de police générale que seul le Maire peut prescrire,`,
+      `Whereas consistent and accurate address numbering benefits residents, businesses, and public services,`,
       {
         align: 'justify',
         maxWidth,
       },
     )
     .addText(
-      `Considérant que dans les communes où l'opération est nécessaire, le numérotage des maisons est exécuté pour la première fois à la charge de la commune,`,
+      `Whereas the initial numbering of addresses is the responsibility of the jurisdiction,`,
       {
         align: 'justify',
         maxWidth,
@@ -72,20 +72,20 @@ export async function generateArreteDeNumerotation(
     )
     .addNewPage()
     .changeFontSize(20)
-    .addText(`ARRÊTÉ :`, {
+    .addText(`IT IS HEREBY ORDERED:`, {
       align: 'center',
     })
     .changeFontSize(12)
     .addNewLine()
     .addText(
-      `Article 1 : L’accès aux locaux se fait par la voie ${voie.nom}. Le
-numérotage des parcelles cadastrées precrit suivant le tableau ci-dessous :`,
+      `Section 1: Access to the properties is via ${voie.nom}. The
+numbering of the parcels is prescribed as follows:`,
       {
         align: 'justify',
       },
     )
     .addGenericTable(
-      ['Numéro', 'Parcelle(s) cadastrale(s) associée(s)'],
+      ['Number', 'Associated Parcel(s)'],
       voie.numeros
         .sort((a, b) => {
           if (a.numero !== b.numero) return a.numero - b.numero;
@@ -102,8 +102,8 @@ numérotage des parcelles cadastrées precrit suivant le tableau ci-dessous :`,
     .addNewLine()
     .addNewLine()
     .addText(
-      `Article 2 : Un plan de numérotage sera déposé aux services techniques et mis à la
-disposition du public.`,
+      `Section 2: A numbering plan shall be filed with the public works department and made
+available to the public.`,
       {
         align: 'justify',
         maxWidth,
@@ -111,8 +111,8 @@ disposition du public.`,
     )
     .addNewLine()
     .addText(
-      `Article 3 : Les numéros seront fournis et fixés par la commune dont l’entretien
-incombera aux propriétaires riverains.`,
+      `Section 3: Address numbers shall be furnished and installed by the jurisdiction; ongoing
+maintenance shall be the responsibility of the property owners.`,
       {
         align: 'justify',
         maxWidth,
@@ -123,7 +123,7 @@ incombera aux propriétaires riverains.`,
     doc
       .addNewPage()
       .addNewLine()
-      .addText('Plan de situation :', { align: 'left' })
+      .addText('Site Plan:', { align: 'left' })
       .addImage(planDeSituationDataUrl, imageFormat as 'png' | 'jpeg' | 'jpg', {
         width: maxWidth,
         height:

@@ -148,6 +148,7 @@ export class VoieService {
       centroid: null,
       bbox: null,
       comment: createVoieDto.comment,
+      gersId: createVoieDto.gersId || null,
     };
     // Calculer le centroid si la trace et le type de numerotation est metrique
     if (voie.trace && voie.typeNumerotation === TypeNumerotationEnum.METRIQUE) {
@@ -438,7 +439,7 @@ export class VoieService {
     const baseLocale = await this.baseLocaleService.findOneOrFail(voie.balId);
     if (baseLocale.status !== StatusBaseLocalEnum.PUBLISHED) {
       throw new HttpException(
-        'La Base Adresse Locale doit être publiée pour pouvoir générer le document',
+        'The Local Address Base must be published to generate the document',
         HttpStatus.UNAUTHORIZED,
       );
     }

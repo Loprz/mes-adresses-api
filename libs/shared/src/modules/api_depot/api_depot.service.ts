@@ -173,7 +173,7 @@ export class ApiDepotService {
 
     if (!computedRevision.validation.valid) {
       this.logger.warn(
-        `Export BAL non valide : ${balId}`,
+        `Invalid LAB export: ${balId}`,
         ApiDepotService.name,
       );
       throw new HttpException(

@@ -1,7 +1,6 @@
-import { CommunePrecedente } from '@/shared/utils/cog.utils';
 import { ApiProperty } from '@nestjs/swagger';
 
-export class CommunePrecedenteDTO implements CommunePrecedente {
+export class SubJurisdictionDTO {
   @ApiProperty()
   code: string;
 
@@ -19,11 +18,20 @@ export class CommuneDTO {
   @ApiProperty()
   nom: string;
 
+  @ApiProperty({ description: 'Whether this is a place (city/town) or county' })
+  level?: 'place' | 'county';
+
+  @ApiProperty({ description: 'Type: city, town, village, borough, or county' })
+  type?: string;
+
+  @ApiProperty({ description: 'Parent county name (for places)' })
+  countyName?: string;
+
   @ApiProperty()
   isCOM: boolean;
 
-  @ApiProperty()
-  hasCadastre: boolean;
+  @ApiProperty({ description: 'Whether parcel tile data is available for this jurisdiction' })
+  hasParcels: boolean;
 
   @ApiProperty()
   hasOpenMapTiles: boolean;
@@ -34,6 +42,6 @@ export class CommuneDTO {
   @ApiProperty()
   hasPlanIGN: boolean;
 
-  @ApiProperty({ type: () => CommunePrecedenteDTO, isArray: true })
-  communesDeleguees: CommunePrecedenteDTO[];
+  @ApiProperty({ type: () => SubJurisdictionDTO, isArray: true })
+  communesDeleguees: SubJurisdictionDTO[];
 }

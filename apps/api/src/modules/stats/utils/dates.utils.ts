@@ -22,7 +22,7 @@ export function checkFromIsBeforeTo(from: string, to: string): boolean {
 export function checkQueryDateFromTo(from: string, to: string) {
   if ((!from && to) || (!to && from)) {
     throw new HttpException(
-      'Il manque une date from ou to',
+      'Missing a "from" or "to" date',
       HttpStatus.BAD_REQUEST,
     );
   }
@@ -36,7 +36,7 @@ export function checkQueryDateFromTo(from: string, to: string) {
 
     if (!checkFromIsBeforeTo(from, to)) {
       throw new HttpException(
-        'La date from est plus vielle que la date to',
+        'The "from" date is after the "to" date',
         HttpStatus.BAD_REQUEST,
       );
     }

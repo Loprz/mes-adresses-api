@@ -7,6 +7,7 @@ import {
   ValidateNested,
   IsNotEmptyObject,
   IsEnum,
+  IsUUID,
   MaxLength,
   IsNotEmpty,
 } from 'class-validator';
@@ -15,7 +16,7 @@ import { TypeNumerotationEnum } from '@/shared/entities/voie.entity';
 import { LineString } from './line_string';
 
 export class CreateVoieDTO {
-  @IsNotEmpty({ message: 'voie_nom:Le champ nom est obligatoire' })
+  @IsNotEmpty({ message: 'voie_nom:The name field is required' })
   @Validate(ValidatorBal, ['voie_nom'])
   @ApiProperty({ required: true, nullable: false })
   nom: string;
@@ -43,8 +44,17 @@ export class CreateVoieDTO {
 
   @IsOptional()
   @MaxLength(5000, {
-    message: 'comment:Le champ ne peut pas dépasser 5000 caractères',
+    message: 'comment:Field cannot exceed 5000 characters',
   })
   @ApiProperty({ required: false, nullable: true })
   comment?: string;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'gersId:Must be a valid UUID v4 (Overture GERS ID)' })
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    description: 'Overture Maps GERS ID for street/transportation segment cross-referencing',
+  })
+  gersId?: string;
 }

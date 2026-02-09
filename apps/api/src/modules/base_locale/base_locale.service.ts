@@ -32,7 +32,7 @@ import {
   BaseLocale,
   StatusBaseLocalEnum,
 } from '@/shared/entities/base_locale.entity';
-import { Habilitation } from '@/shared/modules/api_depot/api-depot.types';
+import { Habilitation } from '@/shared/entities/habilitation.entity';
 import { BanPlateformService } from '@/shared/modules/ban_plateform/ban_plateform.service';
 import {
   getApiRecoveryUrl,
@@ -50,7 +50,7 @@ import { CreateBaseLocaleDTO } from '@/modules/base_locale/dto/create_base_local
 import { ExtendedBaseLocaleDTO } from './dto/extended_base_locale.dto';
 import { UpdateBaseLocaleDTO } from './dto/update_base_locale.dto';
 import { CreateDemoBaseLocaleDTO } from './dto/create_demo_base_locale.dto';
-import { getCommuneActuelle } from '@/shared/utils/cog.utils';
+import { getJurisdictionName } from '@/shared/utils/fips.utils';
 import { PopulateService } from './sub_modules/populate/populate.service';
 import { UpdateBaseLocaleDemoDTO } from './dto/update_base_locale_demo.dto';
 import { ImportFileBaseLocaleDTO } from './dto/import_file_base_locale.dto';
@@ -172,7 +172,7 @@ export class BaseLocaleService {
     const apiUrl = getApiUrl();
     await this.mailerService.sendMail({
       to: newBaseLocale.emails,
-      subject: 'Création d’une nouvelle Base Adresse Locale',
+      subject: 'New Local Address Base created',
       template: 'bal-creation-notification',
       bcc: this.configService.get('SMTP_BCC'),
       context: {
@@ -197,7 +197,7 @@ export class BaseLocaleService {
       banId,
       token: generateBase62String(20),
       commune,
-      nom: `Adresses de ${getCommuneActuelle(commune)?.nom} [démo]`,
+      nom: `Addresses of ${getJurisdictionName(commune) || commune} [demo]`,
       status: StatusBaseLocalEnum.DEMO,
       settings: {
         languageGoalIgnored: false,
@@ -282,7 +282,7 @@ export class BaseLocaleService {
     // On lance une erreur si la Bal est demo
     if (baseLocale.status === StatusBaseLocalEnum.DEMO) {
       throw new HttpException(
-        'Une Base Adresse Locale de démonstration ne peut pas être modifiée. Elle doit d’abord être transformée en brouillon.',
+        'A demo Local Address Base cannot be modified. It must first be converted to a draft.',
         HttpStatus.PRECONDITION_FAILED,
       );
     }
@@ -310,7 +310,7 @@ export class BaseLocaleService {
       if (newCollaborators?.length > 0) {
         await this.mailerService.sendMail({
           to: newCollaborators,
-          subject: 'Invitation à l’administration d’une Base Adresse Locale',
+          subject: 'Invitation to administer a Local Address Base',
           template: 'new-admin-notification',
           bcc: this.configService.get('SMTP_BCC'),
           context: {
@@ -332,7 +332,7 @@ export class BaseLocaleService {
     // On lance une erreur si la Bal est demo
     if (baseLocale.status !== StatusBaseLocalEnum.DEMO) {
       throw new HttpException(
-        'La Base Adresse Locale n’est pas une Base Adresse Locale de démonstration.',
+        'The Local Address Base is not a demo Local Address Base.',
         HttpStatus.PRECONDITION_FAILED,
       );
     }
@@ -354,7 +354,7 @@ export class BaseLocaleService {
       const apiUrl = getApiUrl();
       await this.mailerService.sendMail({
         to: updatedBaseLocale.emails,
-        subject: 'Création d’une nouvelle Base Adresse Locale',
+        subject: 'New Local Address Base created',
         template: 'bal-creation-notification',
         bcc: this.configService.get('SMTP_BCC'),
         context: {
@@ -516,8 +516,8 @@ export class BaseLocaleService {
       // Si il a des Bal qui correspondent, on envoie un mail pour retouver l'accès a ses Bal
       const STATUS = {
         [StatusBaseLocalEnum.DRAFT]: 'Brouillon',
-        [StatusBaseLocalEnum.PUBLISHED]: 'Publiée',
-        [StatusBaseLocalEnum.REPLACED]: 'Remplacée',
+        [StatusBaseLocalEnum.PUBLISHED]: 'Published',
+        [StatusBaseLocalEnum.REPLACED]: 'Replaced',
       };
 
       const apiUrl = getApiUrl();
@@ -534,7 +534,7 @@ export class BaseLocaleService {
         .filter(({ deletedAt }) => deletedAt)
         .map((baseLocale) => ({
           ...baseLocale,
-          statusFr: 'Supprimée',
+          statusFr: 'Deleted',
           deletedRecoveryUrl: getApiRecoveryUrl(baseLocale),
           deletedAt: baseLocale.deletedAt
             ? format(baseLocale.deletedAt, 'P', { locale: fr })
@@ -543,7 +543,7 @@ export class BaseLocaleService {
 
       await this.mailerService.sendMail({
         to: email,
-        subject: 'Demande de récupération de vos Bases Adresses Locales',
+        subject: 'Recovery request for your Local Address Bases',
         template: 'recovery-notification',
         bcc: this.configService.get('SMTP_BCC'),
         context: {
@@ -555,7 +555,7 @@ export class BaseLocaleService {
     } else {
       // Si aucune Bal ne correspond, on lance un erreur
       throw new HttpException(
-        'Aucune base locale ne correspond à ces critères',
+        'No Local Address Base matches these criteria',
         HttpStatus.NOT_FOUND,
       );
     }
@@ -564,7 +564,7 @@ export class BaseLocaleService {
   async recoverAccessByCommune({ codeCommune }: RecoverCommuneDTO) {
     if (!codeCommune) {
       throw new HttpException(
-        'Le code commune est requis',
+        'The jurisdiction code is required',
         HttpStatus.BAD_REQUEST,
       );
     }
@@ -578,7 +578,7 @@ export class BaseLocaleService {
 
     if (!baseLocale) {
       throw new HttpException(
-        'Aucune base locale ne correspond à ces critères',
+        'No Local Address Base matches these criteria',
         HttpStatus.NOT_FOUND,
       );
     }
@@ -586,7 +586,7 @@ export class BaseLocaleService {
     const emails = await getEmailsMairie(codeCommune);
     if (!emails || emails.length === 0) {
       throw new HttpException(
-        'Aucune adresse email trouvée pour la commune',
+        'No email address found for the jurisdiction',
         HttpStatus.NOT_FOUND,
       );
     }
@@ -645,7 +645,7 @@ export class BaseLocaleService {
       const apiUrl = getApiUrl();
       await this.mailerService.sendMail({
         to: updatedBaseLocale.emails,
-        subject: 'Renouvellement de jeton de Base Adresse Locale',
+        subject: 'Local Address Base Token Renewal',
         template: 'bal-renewal-notification',
         bcc: this.configService.get('SMTP_BCC'),
         context: {

@@ -528,7 +528,7 @@ export class BaseLocaleController {
   async pauseBaseLocale(@Req() req: CustomRequest, @Res() res: Response) {
     if (!req.baseLocale.sync.status) {
       throw new HttpException(
-        'Le statut de synchronisation doit être actif pour modifier l’état de pause',
+        'The sync status must be active to change the pause state',
         HttpStatus.PRECONDITION_FAILED,
       );
     }
@@ -548,7 +548,7 @@ export class BaseLocaleController {
   async resumeBaseLocale(@Req() req: CustomRequest, @Res() res: Response) {
     if (!req.baseLocale.sync.status) {
       throw new HttpException(
-        'Le statut de synchronisation doit être actif pour modifier l’état de pause',
+        'The sync status must be active to change the pause state',
         HttpStatus.PRECONDITION_FAILED,
       );
     }

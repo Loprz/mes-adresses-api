@@ -7,6 +7,7 @@ import {
   ValidateNested,
   ArrayNotEmpty,
   IsMongoId,
+  IsUUID,
   Max,
   Min,
   IsInt,
@@ -18,9 +19,9 @@ import { ValidatorCogCommune } from '@/shared/validators/cog.validator';
 
 export class UpdateNumeroDTO {
   @IsOptional()
-  @IsInt({ message: 'numero:Le champ numéro doit être un entier' })
-  @Min(0, { message: 'numero:Le champ numéro doit être 0 au minimum' })
-  @Max(99998, { message: 'numero:Le champ numéro doit être inférieur à 99998' })
+  @IsInt({ message: 'numero:The number field must be an integer' })
+  @Min(0, { message: 'numero:The number field must be at least 0' })
+  @Max(99998, { message: 'numero:The number field must be less than 99998' })
   @ApiProperty({ required: false, nullable: false })
   numero?: number;
 
@@ -31,7 +32,7 @@ export class UpdateNumeroDTO {
 
   @IsOptional()
   @MaxLength(5000, {
-    message: 'comment:Le champ ne peut pas dépasser 5000 caractères',
+    message: 'comment:Field cannot exceed 5000 characters',
   })
   @ApiProperty({ required: false, nullable: true })
   comment?: string;
@@ -71,4 +72,13 @@ export class UpdateNumeroDTO {
     nullable: false,
   })
   positions?: Position[];
+
+  @IsOptional()
+  @IsUUID('4', { message: 'gersId:Must be a valid UUID v4 (Overture GERS ID)' })
+  @ApiProperty({
+    required: false,
+    nullable: true,
+    description: 'Overture Maps GERS ID for address stability and cross-referencing',
+  })
+  gersId?: string;
 }

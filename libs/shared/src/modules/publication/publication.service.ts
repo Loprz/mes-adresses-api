@@ -7,10 +7,12 @@ import * as hasha from 'hasha';
 
 import {
   Revision,
-  Habilitation,
-  StatusHabilitationEnum,
   TypeFileEnum,
 } from '@/shared/modules/api_depot/api-depot.types';
+import {
+  Habilitation,
+  StatusHabilitationEnum,
+} from '@/shared/entities/habilitation.entity';
 import {
   BaseLocale,
   StatusBaseLocalEnum,
@@ -32,6 +34,8 @@ export class PublicationService {
     private basesLocalesRepository: Repository<BaseLocale>,
     @InjectRepository(Numero)
     private numerosRepository: Repository<Numero>,
+    @InjectRepository(Habilitation)
+    private habilitationsRepository: Repository<Habilitation>,
     private configService: ConfigService,
   ) {}
 
@@ -46,7 +50,7 @@ export class PublicationService {
     // On vérifie que la BAL n'est pas en DEMO ou DRAFT
     if (baseLocale.status === StatusBaseLocalEnum.DEMO) {
       throw new HttpException(
-        'La synchronisation pas possibles pour les Bases Adresses Locales de démo',
+        'Synchronization is not possible for demo Local Address Bases',
         HttpStatus.PRECONDITION_FAILED,
       );
     }
@@ -57,30 +61,29 @@ export class PublicationService {
     if (!baseLocale.habilitationId) {
       await this.pause(balId);
       throw new HttpException(
-        'Aucune habilitation rattachée à cette Base Adresse Locale',
+        'No authorization attached to this Local Address Base',
         HttpStatus.PRECONDITION_FAILED,
       );
     }
 
-    // On récupère l'habilitation sur l'api-depot
-    let habilitation: Habilitation;
-    try {
-      habilitation = await this.apiDepotService.findOneHabiliation(
-        baseLocale.habilitationId,
+    // Look up the authorization from local database
+    const habilitation = await this.habilitationsRepository.findOne({
+      where: { id: baseLocale.habilitationId },
+    });
+
+    if (!habilitation) {
+      await this.pause(balId);
+      throw new HttpException(
+        'Authorization not found',
+        HttpStatus.NOT_FOUND,
       );
-    } catch (err) {
-      // Si l'habilitation est introuvable sur l'API dépot on met la BAL en pause
-      if (err.status === HttpStatus.NOT_FOUND) {
-        await this.pause(balId);
-      }
-      throw err;
     }
 
     // On verifie que l'habilitation est valide
     if (habilitation.status !== StatusHabilitationEnum.ACCEPTED) {
       await this.pause(balId);
       throw new HttpException(
-        'L’habilitation rattachée n’est pas une habilitation valide',
+        'The attached authorization is not valid',
         HttpStatus.PRECONDITION_FAILED,
       );
     }
@@ -93,7 +96,7 @@ export class PublicationService {
     // On vérifie qu'il y ai au moins un numero dans la BAL
     if (numeroCount === 0) {
       throw new HttpException(
-        'La base locale ne possède aucune adresse',
+        'The Local Address Base has no addresses',
         HttpStatus.PRECONDITION_FAILED,
       );
     }
@@ -115,7 +118,7 @@ export class PublicationService {
       const apiUrl = getApiUrl();
       await this.mailerService.sendMail({
         to: baseLocale.emails,
-        subject: 'Publication de votre Base Adresse Locale',
+        subject: 'Your Local Address Base Has Been Published',
         template: 'bal-publication-notification',
         bcc: this.configService.get('SMTP_BCC'),
         context: {
@@ -250,7 +253,7 @@ export class PublicationService {
         baseLocale.sync.status !== StatusSyncEnum.OUTDATED)
     ) {
       throw new HttpException(
-        'Le statut de synchronisation doit être "synced" ou "outdated"',
+        'The synchronization status must be "synced" or "outdated"',
         HttpStatus.PRECONDITION_FAILED,
       );
     }
