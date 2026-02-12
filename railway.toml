@@ -1,0 +1,8 @@
+# Railway config for mes-adresses-api (BAL API)
+# See docs/RAILWAY_DEPLOYMENT.md in the repo root.
+
+[build]
+buildCommand = "yarn install --frozen-lockfile && yarn build"
+
+[deploy]
+startCommand = "node dist/apps/api/main.js"

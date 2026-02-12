@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, RequestMethod } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { json } from 'express';
 
@@ -33,10 +33,14 @@ async function bootstrap() {
     )
     .build();
   app.useGlobalPipes(new ValidationPipe());
-  app.setGlobalPrefix('v2');
+  app.setGlobalPrefix('v2', {
+    exclude: [{ path: '', method: RequestMethod.GET }],
+  });
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(process.env.PORT || 5000);
+  const port = process.env.PORT || 5000;
+  await app.listen(port, '0.0.0.0');
+  console.log(`Listening on 0.0.0.0:${port}`);
 }
 bootstrap();

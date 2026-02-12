@@ -23,6 +23,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { SignalementModule } from './modules/signalement/signalement.module';
 import { OvertureApiModule } from './modules/overture/overture.module';
 import { BullModule } from '@nestjs/bullmq';
+import { HealthController } from './health.controller';
 
 @Module({
   imports: [
@@ -44,15 +45,33 @@ import { BullModule } from '@nestjs/bullmq';
     }),
     BullModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        connection: {
-          url: config.get('REDIS_URL'),
-        },
-        defaultJobOptions: {
-          removeOnComplete: true,
-          removeOnFail: true,
-        },
-      }),
+      useFactory: (config: ConfigService) => {
+        const redisUrl = config.get<string>('REDIS_URL');
+        let connection: { url: string } | { host: string; port: number; password?: string; username?: string; family: number };
+        if (redisUrl?.includes('railway.internal')) {
+          try {
+            const u = new URL(redisUrl);
+            connection = {
+              host: u.hostname,
+              port: parseInt(u.port || '6379', 10),
+              password: u.password || undefined,
+              username: u.username || undefined,
+              family: 4,
+            };
+          } catch {
+            connection = { url: redisUrl };
+          }
+        } else {
+          connection = { url: redisUrl };
+        }
+        return {
+          connection,
+          defaultJobOptions: {
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        };
+      },
       inject: [ConfigService],
     }),
     MailerModule.forRootAsync(MailerParams),
@@ -65,7 +84,7 @@ import { BullModule } from '@nestjs/bullmq';
     SignalementModule,
     OvertureApiModule,
   ],
-  controllers: [],
+  controllers: [HealthController],
   providers: [],
 })
 export class ApiModule {}

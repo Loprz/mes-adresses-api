@@ -4,14 +4,20 @@ export class CreateHabilitationsTable1770100000000
   implements MigrationInterface
 {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // Create the status enum type
+    // Create the status enum type (idempotent: skip if already exists from a partial run)
     await queryRunner.query(`
-      CREATE TYPE habilitations_status_enum AS ENUM ('accepted', 'pending', 'rejected')
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'habilitations_status_enum') THEN
+          CREATE TYPE habilitations_status_enum AS ENUM ('accepted', 'pending', 'rejected');
+        END IF;
+      END
+      $$
     `);
 
-    // Create the habilitations table
+    // Create the habilitations table (idempotent)
     await queryRunner.query(`
-      CREATE TABLE habilitations (
+      CREATE TABLE IF NOT EXISTS habilitations (
         id VARCHAR(24) PRIMARY KEY,
         bal_id VARCHAR(24) NOT NULL,
         code_commune VARCHAR(7) NOT NULL,
@@ -27,15 +33,15 @@ export class CreateHabilitationsTable1770100000000
       )
     `);
 
-    // Create indexes
+    // Create indexes (idempotent)
     await queryRunner.query(
-      `CREATE INDEX idx_habilitations_bal_id ON habilitations(bal_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_habilitations_bal_id ON habilitations(bal_id)`,
     );
     await queryRunner.query(
-      `CREATE INDEX idx_habilitations_code_commune ON habilitations(code_commune)`,
+      `CREATE INDEX IF NOT EXISTS idx_habilitations_code_commune ON habilitations(code_commune)`,
     );
     await queryRunner.query(
-      `CREATE INDEX idx_habilitations_status ON habilitations(status)`,
+      `CREATE INDEX IF NOT EXISTS idx_habilitations_status ON habilitations(status)`,
     );
   }
 

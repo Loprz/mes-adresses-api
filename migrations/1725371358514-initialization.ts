@@ -4,6 +4,7 @@ export class Initialization1725371358514 implements MigrationInterface {
   name = 'Initialization1725371358514';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS postgis`);
     await queryRunner.query(
       `CREATE TYPE "public"."positions_type_enum" AS ENUM('entrée', 'bâtiment', 'cage d’escalier', 'logement', 'service technique', 'délivrance postale', 'parcelle', 'segment', 'inconnue')`,
     );
