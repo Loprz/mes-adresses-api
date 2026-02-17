@@ -5,4 +5,9 @@
 buildCommand = "yarn install --frozen-lockfile && yarn build"
 
 [deploy]
-startCommand = "node dist/apps/api/main.js"
+# Env toggles:
+# - SERVICE_ROLE=api|cron (default: api)
+# - RUN_DB_MIGRATIONS=1 to gate startup on successful migrations
+startCommand = "bash ./scripts/railway-start.sh"
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 10
