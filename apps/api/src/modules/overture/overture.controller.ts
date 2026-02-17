@@ -166,7 +166,10 @@ export class OvertureController {
       return {
         success: true,
         ...result,
-        editorUrl: `http://localhost:3000/bal/${result.balId}`,
+        editorUrl: (process.env.EDITOR_URL_PATTERN ||
+          'http://localhost:3000/bal/<id>/<token>')
+          .replace('<id>', result.balId)
+          .replace('<token>', result.token),
       };
     } catch (error) {
       this.logger.error(`Overture import failed: ${error.message}`);

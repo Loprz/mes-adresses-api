@@ -1,4 +1,4 @@
-import { Injectable, NestMiddleware } from '@nestjs/common';
+import { Injectable, NestMiddleware, NotFoundException } from '@nestjs/common';
 import { Response, NextFunction } from 'express';
 import { BaseLocale } from '@/shared/entities/base_locale.entity';
 
@@ -14,12 +14,19 @@ export class BaseLocaleMiddleware implements NestMiddleware {
   async use(req: CustomRequest, res: Response, next: NextFunction) {
     const { baseLocaleId } = req.params;
 
-    if (ObjectId.isValid(baseLocaleId)) {
-      const basesLocale: BaseLocale =
-        await this.baseLocaleService.findOneOrFail(baseLocaleId);
-      req.baseLocale = basesLocale;
-      req.isAdmin = isAdmin(req, basesLocale);
+    if (!baseLocaleId) {
+      return next();
     }
+
+    if (!ObjectId.isValid(baseLocaleId)) {
+      throw new NotFoundException(`BaseLocale ${baseLocaleId} not found`);
+    }
+
+    const basesLocale: BaseLocale =
+      await this.baseLocaleService.findOneOrFail(baseLocaleId);
+    req.baseLocale = basesLocale;
+    req.isAdmin = isAdmin(req, basesLocale);
+
     next();
   }
 }
