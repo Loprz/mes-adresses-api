@@ -11,7 +11,10 @@ import {
 } from '@/shared/entities/habilitation.entity';
 import { BaseLocale } from '@/shared/entities/base_locale.entity';
 import { BaseLocaleService } from '../../base_locale.service';
-import { getJurisdictionEmails, getJurisdictionName } from '@/shared/utils/fips.utils';
+import {
+  getJurisdictionEmails,
+  getJurisdictionName,
+} from '@/shared/utils/fips.utils';
 import { getApiUrl } from '@/shared/utils/mailer.utils';
 
 @Injectable()
@@ -69,7 +72,11 @@ export class HabilitationService {
     return habilitation.status === StatusHabilitationEnum.ACCEPTED;
   }
 
-  async areValid(habilitationIds: string[]): Promise<boolean> {
+  async areValid(habilitationIds: string[]): Promise<Record<string, boolean>> {
+    if (!habilitationIds || habilitationIds.length === 0) {
+      return {};
+    }
+
     if (
       habilitationIds.some(
         (habilitationId) => !ObjectId.isValid(habilitationId),
@@ -86,8 +93,18 @@ export class HabilitationService {
       .where('h.id IN (:...ids)', { ids: habilitationIds })
       .getMany();
 
-    return habilitations.every(
-      (h) => h.status === StatusHabilitationEnum.ACCEPTED,
+    const acceptedIds = new Set(
+      habilitations
+        .filter((h) => h.status === StatusHabilitationEnum.ACCEPTED)
+        .map((h) => h.id),
+    );
+
+    return habilitationIds.reduce(
+      (index, id) => ({
+        ...index,
+        [id]: acceptedIds.has(id),
+      }),
+      {},
     );
   }
 
@@ -252,13 +269,17 @@ export class HabilitationService {
       // Decrement remaining attempts
       habilitation.strategy = {
         ...habilitation.strategy,
-        remainingAttempts: (habilitation.strategy.remainingAttempts ?? this.MAX_PIN_ATTEMPTS) - 1,
+        remainingAttempts:
+          (habilitation.strategy.remainingAttempts ?? this.MAX_PIN_ATTEMPTS) -
+          1,
       };
       await this.habilitationsRepository.save(habilitation);
 
       const remaining = habilitation.strategy.remainingAttempts;
       throw new HttpException(
-        `Invalid PIN code. ${remaining} attempt${remaining === 1 ? '' : 's'} remaining.`,
+        `Invalid PIN code. ${remaining} attempt${
+          remaining === 1 ? '' : 's'
+        } remaining.`,
         HttpStatus.FORBIDDEN,
       );
     }
