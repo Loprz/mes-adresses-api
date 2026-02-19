@@ -18,6 +18,9 @@ Usage:
     # Import a specific city (7-digit place FIPS)
     python3 scripts/import-overture.py --fips 0627000  # Fresno city
 
+    # Import a specific city using Overture locality boundary filtering
+    python3 scripts/import-overture.py --fips 0625436 --city-boundary on
+
 Requirements:
     pip3 install duckdb requests
 """
@@ -25,6 +28,7 @@ Requirements:
 import argparse
 import json
 import os
+import re
 import sys
 import time
 
@@ -34,6 +38,12 @@ import time
 
 OVERTURE_RELEASE = "2026-01-21.0"
 OVERTURE_S3_PATH = f"s3://overturemaps-us-west-2/release/{OVERTURE_RELEASE}/theme=addresses/type=address/*"
+OVERTURE_DIVISIONS_PATH = (
+    f"s3://overturemaps-us-west-2/release/{OVERTURE_RELEASE}/theme=divisions/type=division/*"
+)
+OVERTURE_DIVISION_AREAS_PATH = (
+    f"s3://overturemaps-us-west-2/release/{OVERTURE_RELEASE}/theme=divisions/type=division_area/*"
+)
 API_BASE = os.environ.get("NAP_API_URL", "http://localhost:5050")
 API_IMPORT_ENDPOINT = f"{API_BASE}/v2/overture/import"
 
@@ -50,7 +60,79 @@ COUNTY_BBOXES = {
 }
 
 
-def download_from_overture(fips: str, bbox: tuple, limit: int | None = None) -> list:
+def sql_escape(value: str) -> str:
+    return value.replace("'", "''")
+
+
+def get_fips_metadata(fips: str) -> dict:
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    fips_path = os.path.normpath(os.path.join(script_dir, "..", "us-fips-data.json"))
+
+    with open(fips_path, "r") as f:
+        data = json.load(f)
+
+    place = data.get("places", {}).get(fips)
+    county = data.get("counties", {}).get(fips)
+    return {
+        "place": place,
+        "county": county,
+    }
+
+
+def get_bbox_for_fips(fips: str, explicit_bbox: tuple | None) -> tuple | None:
+    if explicit_bbox:
+        return explicit_bbox
+
+    if fips in COUNTY_BBOXES:
+        return COUNTY_BBOXES[fips]
+
+    # Place FIPS (7-digit): derive county bbox when available
+    if len(fips) == 7:
+        metadata = get_fips_metadata(fips)
+        place = metadata.get("place")
+        if place:
+            county_fips = place.get("countyFips")
+            if county_fips in COUNTY_BBOXES:
+                print(
+                    f"Using parent county bbox ({county_fips}) for place FIPS {fips} ({place.get('name')})"
+                )
+                return COUNTY_BBOXES[county_fips]
+
+    return None
+
+
+def get_overture_locality_name_candidates(place_name: str) -> list[str]:
+    # Overture locality names often omit legal suffixes in Census place labels
+    # (e.g. "Fowler city" -> "Fowler").
+    base = place_name.strip()
+    simplified = re.sub(
+        r"\s+(city|town|village|borough|municipio|cdp)$",
+        "",
+        base,
+        flags=re.IGNORECASE,
+    ).strip()
+
+    candidates = [base]
+    if simplified and simplified.lower() != base.lower():
+        candidates.append(simplified)
+
+    # Preserve order, remove case-insensitive duplicates
+    seen = set()
+    unique = []
+    for name in candidates:
+        key = name.lower()
+        if key not in seen:
+            seen.add(key)
+            unique.append(name)
+    return unique
+
+
+def download_from_overture(
+    fips: str,
+    bbox: tuple,
+    limit: int | None = None,
+    locality_names: list[str] | None = None,
+) -> list:
     """Download address data from Overture Maps S3 via DuckDB."""
     try:
         import duckdb
@@ -68,22 +150,78 @@ def download_from_overture(fips: str, bbox: tuple, limit: int | None = None) -> 
     con.execute("SET s3_region='us-west-2';")
 
     limit_clause = f"LIMIT {limit}" if limit else ""
+    locality_join_clause = ""
+    locality_cte_clause = ""
+
+    if locality_names:
+        quoted_names = ", ".join(
+            f"'{sql_escape(name.lower())}'" for name in locality_names
+        )
+        print(f"  Locality boundary filter: {', '.join(locality_names)}")
+
+        locality_cte_clause = f"""
+        , locality_candidates AS (
+            SELECT d.id AS division_id
+            FROM read_parquet('{OVERTURE_DIVISIONS_PATH}', filename=true, hive_partitioning=1) d
+            WHERE d.country = 'US'
+              AND d.subtype = 'locality'
+              AND lower(d.names.primary) IN ({quoted_names})
+        ),
+        locality_area AS (
+            SELECT a.geometry
+            FROM read_parquet('{OVERTURE_DIVISION_AREAS_PATH}', filename=true, hive_partitioning=1) a
+            JOIN locality_candidates c
+              ON a.division_id = c.division_id
+            WHERE a.class = 'land'
+              AND a.bbox.xmax > {xmin} AND a.bbox.xmin < {xmax}
+              AND a.bbox.ymax > {ymin} AND a.bbox.ymin < {ymax}
+            ORDER BY ST_Area(a.geometry) DESC
+            LIMIT 1
+        )
+        """
+
+        boundary_count = con.execute(f"""
+            WITH locality_candidates AS (
+                SELECT d.id AS division_id
+                FROM read_parquet('{OVERTURE_DIVISIONS_PATH}', filename=true, hive_partitioning=1) d
+                WHERE d.country = 'US'
+                  AND d.subtype = 'locality'
+                  AND lower(d.names.primary) IN ({quoted_names})
+            )
+            SELECT COUNT(*) FROM locality_candidates
+        """).fetchone()[0]
+
+        if boundary_count == 0:
+            print(
+                f"ERROR: Could not resolve Overture locality boundary for '{', '.join(locality_names)}'."
+            )
+            print("       Try --city-boundary off and provide a tighter --bbox.")
+            sys.exit(1)
+
+        locality_join_clause = "JOIN locality_area la ON ST_Intersects(la.geometry, addr.geometry)"
 
     print("Querying Overture addresses...")
     t0 = time.time()
 
     result = con.execute(f"""
+        WITH
+        addr AS (
+            SELECT *
+            FROM read_parquet('{OVERTURE_S3_PATH}', filename=true, hive_partitioning=1)
+            WHERE bbox.xmin > {xmin} AND bbox.xmax < {xmax}
+              AND bbox.ymin > {ymin} AND bbox.ymax < {ymax}
+              AND country = 'US'
+        )
+        {locality_cte_clause}
         SELECT id,
-               ST_X(geometry) as longitude,
-               ST_Y(geometry) as latitude,
+               ST_X(addr.geometry) as longitude,
+               ST_Y(addr.geometry) as latitude,
                country, postcode, street, number, unit,
                postal_city,
                JSON(address_levels) as addr_levels,
                JSON(sources) as sources
-        FROM read_parquet('{OVERTURE_S3_PATH}', filename=true, hive_partitioning=1)
-        WHERE bbox.xmin > {xmin} AND bbox.xmax < {xmax}
-          AND bbox.ymin > {ymin} AND bbox.ymax < {ymax}
-          AND country = 'US'
+        FROM addr
+        {locality_join_clause}
         {limit_clause}
     """).fetchall()
 
@@ -224,6 +362,15 @@ def main():
         action="store_true",
         help="Download and save data but don't call the API",
     )
+    parser.add_argument(
+        "--city-boundary",
+        choices=["auto", "on", "off"],
+        default="auto",
+        help=(
+            "Filter address points to an Overture locality boundary. "
+            "'auto' enables this for 7-digit place FIPS."
+        ),
+    )
 
     args = parser.parse_args()
 
@@ -238,18 +385,41 @@ def main():
             addresses = addresses[:args.limit]
     else:
         # Get bbox
-        bbox = None
-        if args.bbox:
-            bbox = tuple(args.bbox)
-        elif args.fips in COUNTY_BBOXES:
-            bbox = COUNTY_BBOXES[args.fips]
-        else:
+        bbox = get_bbox_for_fips(args.fips, tuple(args.bbox) if args.bbox else None)
+        if not bbox:
             print(f"ERROR: No bounding box for FIPS {args.fips}.")
             print(f"  Use --bbox XMIN YMIN XMAX YMAX or --file to provide data.")
             print(f"  Known FIPS codes: {', '.join(sorted(COUNTY_BBOXES.keys()))}")
             sys.exit(1)
 
-        addresses = download_from_overture(args.fips, bbox, args.limit)
+        # Optional locality boundary filtering (for place FIPS)
+        locality_names = None
+        boundary_mode = args.city_boundary
+        should_use_boundary = (
+            boundary_mode == "on"
+            or (boundary_mode == "auto" and len(args.fips) == 7)
+        )
+
+        if should_use_boundary:
+            metadata = get_fips_metadata(args.fips)
+            place = metadata.get("place")
+
+            if place:
+                locality_names = get_overture_locality_name_candidates(
+                    place.get("name")
+                )
+            elif boundary_mode == "on":
+                print(
+                    f"ERROR: --city-boundary on requires a 7-digit place FIPS with known metadata. Got {args.fips}."
+                )
+                sys.exit(1)
+
+        addresses = download_from_overture(
+            args.fips,
+            bbox,
+            args.limit,
+            locality_names=locality_names,
+        )
 
     if not addresses:
         print("No addresses to import.")
