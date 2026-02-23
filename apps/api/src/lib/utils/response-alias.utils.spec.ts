@@ -5,6 +5,11 @@ describe('addCanonicalAliases', () => {
     const payload = {
       commune: '0625436',
       nom: 'Fowler city, CA',
+      nbVoies: 129,
+      nbToponymes: 0,
+      nbNumeros: 2254,
+      nbNumerosCertifies: 2100,
+      isAllCertified: false,
       voies: [{ id: 'v1', nom: 'E Katherine Ave', bbox: [-1, -1, 1, 1] }],
       toponymes: [{ id: 't1', nom: 'Old Mill' }],
       numeros: [{ id: 'n1', numero: 100, suffixe: 'A', certifie: true }],
@@ -16,6 +21,11 @@ describe('addCanonicalAliases', () => {
     expect(result.jurisdictionCode).toBe('0625436');
     expect(result.nom).toBe('Fowler city, CA');
     expect(result.name).toBe('Fowler city, CA');
+    expect(result.streetCount).toBe(129);
+    expect(result.placeNameCount).toBe(0);
+    expect(result.addressCount).toBe(2254);
+    expect(result.certifiedAddressCount).toBe(2100);
+    expect(result.areAllAddressesCertified).toBe(false);
 
     expect(result.voies[0].nom).toBe('E Katherine Ave');
     expect(result.voies[0].name).toBe('E Katherine Ave');
