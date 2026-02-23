@@ -34,7 +34,7 @@ import { GenerateCertificatDTO } from './dto/generate_certificat.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('numeros')
-@Controller('numeros')
+@Controller(['numeros', 'addresses'])
 export class NumeroController {
   constructor(private numeroService: NumeroService) {}
 

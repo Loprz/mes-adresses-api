@@ -12,7 +12,7 @@ import { CommuneService } from './commune.service';
 import { CommuneDTO } from './dto/commune.dto';
 
 @ApiTags('commune')
-@Controller('commune')
+@Controller(['commune', 'jurisdictions'])
 export class CommuneController {
   constructor(private communeService: CommuneService) {}
 

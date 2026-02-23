@@ -78,7 +78,7 @@ import { RecoverCommuneDTO } from './dto/recover_commune.dto';
 import { HabilitationService } from './sub_modules/habilitation/habilitation.service';
 
 @ApiTags('bases-locales')
-@Controller('bases-locales')
+@Controller(['bases-locales', 'local-address-bases'])
 export class BaseLocaleController {
   constructor(
     private baseLocaleService: BaseLocaleService,

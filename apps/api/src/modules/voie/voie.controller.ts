@@ -46,7 +46,7 @@ import { filterComments } from '@/shared/utils/filter.utils';
 import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('voies')
-@Controller('voies')
+@Controller(['voies', 'streets'])
 export class VoieController {
   constructor(
     private voieService: VoieService,

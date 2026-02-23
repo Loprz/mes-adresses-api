@@ -9,6 +9,25 @@ Mes adresses api est un dispositif logiciel composé de deux application
 
 Une documentation plus complète et des guides d’utilisation sont disponibles dans le [Wiki](https://github.com/BaseAdresseNationale/mes-adresses-api/wiki).
 
+## US API Aliases (v2, non-breaking)
+
+For US deployments, v2 keeps legacy French routes/fields and now also exposes additive aliases:
+
+- Route aliases:
+  - `/v2/local-address-bases` (legacy: `/v2/bases-locales`)
+  - `/v2/jurisdictions` (legacy: `/v2/commune`)
+  - `/v2/streets` (legacy: `/v2/voies`)
+  - `/v2/place-names` (legacy: `/v2/toponymes`)
+  - `/v2/addresses` (legacy: `/v2/numeros`)
+- Response field aliases:
+  - `commune` -> `jurisdictionCode`
+  - `voies` -> `streets`
+  - `toponymes` -> `placeNames`
+  - `numeros` -> `addresses`
+  - plus nested aliases like `nom` -> `name`, `parcelles` -> `parcelIds`, `numero` -> `houseNumber`
+
+Legacy routes/fields remain the source of truth for backward compatibility during migration.
+
 ## Pré-requis
 
 - [Node.js](https://nodejs.org) 22

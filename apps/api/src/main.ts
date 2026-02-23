@@ -6,6 +6,7 @@ import { json } from 'express';
 import { ApiModule } from './api.module';
 import { WinstonLogger } from '@/shared/modules/logger/logger.service';
 import { Logger } from '@/shared/utils/logger.utils';
+import { addCanonicalAliases } from '@/lib/utils/response-alias.utils';
 
 async function bootstrap() {
   const app = await NestFactory.create(ApiModule, {
@@ -16,11 +17,22 @@ async function bootstrap() {
   // Increase JSON body size limit for Overture bulk imports (up to 100MB)
   app.use(json({ limit: '100mb' }));
 
+  // Add non-breaking US-friendly aliases to JSON responses while keeping legacy keys.
+  app.use((req, res, next) => {
+    // Avoid mutating Swagger/OpenAPI responses.
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+
+    const originalJson = res.json.bind(res);
+    res.json = ((body: unknown) =>
+      originalJson(addCanonicalAliases(body))) as typeof res.json;
+    next();
+  });
+
   const config = new DocumentBuilder()
     .setTitle('Mes adresses API')
-    .setDescription(
-      'API for managing local address bases',
-    )
+    .setDescription('API for managing local address bases')
     .setVersion('2.0')
     .addBearerAuth(
       {

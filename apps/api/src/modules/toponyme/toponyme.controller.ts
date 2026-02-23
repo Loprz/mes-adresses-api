@@ -33,7 +33,7 @@ import { Numero } from '@/shared/entities/numero.entity';
 import { filterComments } from '@/shared/utils/filter.utils';
 
 @ApiTags('toponymes')
-@Controller('toponymes')
+@Controller(['toponymes', 'place-names'])
 export class ToponymeController {
   constructor(
     private toponymeService: ToponymeService,
