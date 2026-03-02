@@ -3,7 +3,12 @@
   "counties": {
     "06019": {
       "name": "Fresno County, CA",
-      "emails": ["clerk@co.fresno.ca.us", "gis@co.fresno.ca.us"]
+      "emails": [
+        "clerk@co.fresno.ca.us",
+        "gis@co.fresno.ca.us",
+        "rylopez@fresnocountyca.gov",
+        "gisfresno@fresnocountyca.gov"
+      ]
     },
     "06037": {
       "name": "Los Angeles County, CA",
