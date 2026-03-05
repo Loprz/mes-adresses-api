@@ -185,6 +185,23 @@ export class HabilitationService {
 
     await this.habilitationsRepository.save(habilitation);
 
+    const smtpHost = this.configService.get<string>('SMTP_HOST');
+    const isProduction =
+      this.configService.get<string>('RAILWAY_ENVIRONMENT') === 'production';
+
+    // In production we must not silently "succeed" without real email delivery.
+    if (!smtpHost && isProduction) {
+      this.logger.error(
+        `SMTP_HOST is missing in production. Cannot deliver PIN for authorization ${habilitationId}.`,
+        undefined,
+        HabilitationService.name,
+      );
+      throw new HttpException(
+        'Email delivery is not configured. Please contact an administrator.',
+        HttpStatus.SERVICE_UNAVAILABLE,
+      );
+    }
+
     // Send the PIN code email
     try {
       await this.mailerService.sendMail({
