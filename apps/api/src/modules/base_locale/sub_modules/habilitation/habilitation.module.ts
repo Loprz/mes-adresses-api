@@ -1,5 +1,6 @@
 import { Module, MiddlewareConsumer, forwardRef, Logger } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 
 import { Habilitation } from '@/shared/entities/habilitation.entity';
 
@@ -11,6 +12,7 @@ import { PublicationModule } from '@/shared/modules/publication/publication.modu
 
 @Module({
   imports: [
+    ConfigModule,
     TypeOrmModule.forFeature([Habilitation]),
     forwardRef(() => BaseLocaleModule),
     PublicationModule,
