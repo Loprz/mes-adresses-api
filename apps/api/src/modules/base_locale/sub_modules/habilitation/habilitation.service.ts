@@ -1,5 +1,6 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { ObjectId } from 'mongodb';
 import { MailerService } from '@nestjs-modules/mailer';
@@ -29,6 +30,7 @@ export class HabilitationService {
     private readonly baseLocaleService: BaseLocaleService,
     private readonly mailerService: MailerService,
     private readonly logger: Logger,
+    private readonly configService: ConfigService,
   ) {}
 
   async findOne(habilitationId: string): Promise<Habilitation> {
