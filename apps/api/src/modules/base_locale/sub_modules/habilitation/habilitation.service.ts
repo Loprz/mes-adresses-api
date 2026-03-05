@@ -188,43 +188,95 @@ export class HabilitationService {
     await this.habilitationsRepository.save(habilitation);
 
     const smtpHost = this.configService.get<string>('SMTP_HOST');
+    const resendApiKey = this.configService.get<string>('RESEND_API_KEY');
+    const resendFrom =
+      this.configService.get<string>('RESEND_FROM') ||
+      this.configService.get<string>('SMTP_FROM') ||
+      'onboarding@resend.dev';
     const isProduction =
       this.configService.get<string>('RAILWAY_ENVIRONMENT') === 'production';
 
-    // In production we must not silently "succeed" without real email delivery.
-    if (!smtpHost && isProduction) {
-      this.logger.error(
-        `SMTP_HOST is missing in production. Cannot deliver PIN for authorization ${habilitationId}.`,
-        undefined,
-        HabilitationService.name,
-      );
-      throw new HttpException(
-        'Email delivery is not configured. Please contact an administrator.',
-        HttpStatus.SERVICE_UNAVAILABLE,
-      );
-    }
-
     // Send the PIN code email
     try {
-      await this.mailerService.sendMail({
-        to: email,
-        subject: 'National Address Platform — Verification Code',
-        template: 'pin-code-verification',
-        context: {
-          pinCode,
-          expirationMinutes: this.PIN_CODE_EXPIRATION_MINUTES,
-          jurisdictionName:
-            getJurisdictionName(habilitation.codeCommune) ||
-            habilitation.codeCommune,
-          apiUrl: getApiUrl(),
-        },
-      });
+      const jurisdictionName =
+        getJurisdictionName(habilitation.codeCommune) ||
+        habilitation.codeCommune;
+
+      if (smtpHost) {
+        await this.mailerService.sendMail({
+          to: email,
+          subject: 'National Address Platform — Verification Code',
+          template: 'pin-code-verification',
+          context: {
+            pinCode,
+            expirationMinutes: this.PIN_CODE_EXPIRATION_MINUTES,
+            jurisdictionName,
+            apiUrl: getApiUrl(),
+          },
+        });
+      } else if (resendApiKey) {
+        const html = `
+          <p>Your National Address Platform verification code is:</p>
+          <p><strong style="font-size: 28px; letter-spacing: 4px;">${pinCode}</strong></p>
+          <p>This code expires in ${this.PIN_CODE_EXPIRATION_MINUTES} minutes.</p>
+          <p>Jurisdiction: ${jurisdictionName}</p>
+        `;
+
+        const response = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: resendFrom,
+            to: email,
+            subject: 'National Address Platform — Verification Code',
+            html,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorBody = await response.text();
+          throw new Error(
+            `Resend email API failed (${response.status}): ${errorBody}`,
+          );
+        }
+      } else if (isProduction) {
+        // In production we must not silently "succeed" without real email delivery.
+        this.logger.error(
+          `SMTP and Resend are both unset in production. Cannot deliver PIN for authorization ${habilitationId}.`,
+          undefined,
+          HabilitationService.name,
+        );
+        throw new HttpException(
+          'Email delivery is not configured. Please contact an administrator.',
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      } else {
+        // In local/dev, keep stream transport behavior to avoid hard failures.
+        await this.mailerService.sendMail({
+          to: email,
+          subject: 'National Address Platform — Verification Code',
+          template: 'pin-code-verification',
+          context: {
+            pinCode,
+            expirationMinutes: this.PIN_CODE_EXPIRATION_MINUTES,
+            jurisdictionName,
+            apiUrl: getApiUrl(),
+          },
+        });
+      }
 
       this.logger.log(
         `PIN code sent to ${email} for authorization ${habilitationId}`,
         HabilitationService.name,
       );
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
       this.logger.error(
         `Failed to send PIN code email to ${email}`,
         error.message,

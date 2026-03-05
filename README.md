@@ -152,6 +152,8 @@ Elles peuvent être définies classiquement ou en créant un fichier `.env` sur 
 | `SMTP_SECURE`                       | Indique si le serveur SMTP nécessite une connexion sécurisée (`YES`)                                                                  |
 | `SMTP_FROM`                         | Adresse à utiliser en tant qu'expéditeur des emails                                                                                   |
 | `SMTP_BCC`                          | Adresse(s) en copie cachée à utiliser pour tous les envois de notifications                                                           |
+| `RESEND_API_KEY`                    | Clé API Resend utilisée comme fallback d'envoi email quand SMTP n'est pas configuré                                                   |
+| `RESEND_FROM`                       | Adresse expéditrice utilisée avec Resend (ex: `onboarding@resend.dev` ou domaine vérifié)                                             |
 | ---                                 | ---                                                                                                                                   |
 | `S3_ENDPOINT`                       | URL de base du serveur S3                                                                                                             |
 | `S3_REGION`                         | région du S3                                                                                                                          |
