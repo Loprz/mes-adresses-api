@@ -10,6 +10,7 @@ import { BaseLocale } from '@/shared/entities/base_locale.entity';
 import { Numero } from '@/shared/entities/numero.entity';
 import { Habilitation } from '@/shared/entities/habilitation.entity';
 import { MailerParams } from '@/shared/params/mailer.params';
+import { TransactionalEmailService } from '@/shared/modules/transactional_email/transactional_email.service';
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { MailerParams } from '@/shared/params/mailer.params';
     ApiDepotModule,
     ExportCsvModule,
   ],
-  providers: [PublicationService],
+  providers: [PublicationService, TransactionalEmailService],
   exports: [PublicationService],
 })
 export class PublicationModule {}

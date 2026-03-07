@@ -27,6 +27,7 @@ import { PopulateModule } from './sub_modules/populate/populate.module';
 import { ConfigModule } from '@nestjs/config';
 import { CacheModule } from '@/shared/modules/cache/cache.module';
 import { QUEUE_NAME } from '@/shared/params/queue_name.const';
+import { TransactionalEmailService } from '@/shared/modules/transactional_email/transactional_email.service';
 
 @Module({
   imports: [
@@ -51,7 +52,13 @@ import { QUEUE_NAME } from '@/shared/params/queue_name.const';
     forwardRef(() => CommuneModule),
     forwardRef(() => PopulateModule),
   ],
-  providers: [BaseLocaleMiddleware, BaseLocaleService, SearchQueryPipe, Logger],
+  providers: [
+    BaseLocaleMiddleware,
+    BaseLocaleService,
+    SearchQueryPipe,
+    TransactionalEmailService,
+    Logger,
+  ],
   controllers: [BaseLocaleController],
   exports: [BaseLocaleService],
 })

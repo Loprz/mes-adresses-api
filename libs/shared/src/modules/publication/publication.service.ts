@@ -1,8 +1,6 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MailerService } from '@nestjs-modules/mailer';
-import { ConfigService } from '@nestjs/config';
 import * as hasha from 'hasha';
 
 import {
@@ -23,20 +21,20 @@ import { Numero } from '@/shared/entities/numero.entity';
 import { ApiDepotService } from '@/shared/modules/api_depot/api_depot.service';
 import { ExportCsvService } from '@/shared/modules/export_csv/export_csv.service';
 import { getApiUrl, getEditorUrl } from '@/shared/utils/mailer.utils';
+import { TransactionalEmailService } from '@/shared/modules/transactional_email/transactional_email.service';
 
 @Injectable()
 export class PublicationService {
   constructor(
     private readonly apiDepotService: ApiDepotService,
     private readonly exportCsvService: ExportCsvService,
-    private readonly mailerService: MailerService,
+    private readonly transactionalEmailService: TransactionalEmailService,
     @InjectRepository(BaseLocale)
     private basesLocalesRepository: Repository<BaseLocale>,
     @InjectRepository(Numero)
     private numerosRepository: Repository<Numero>,
     @InjectRepository(Habilitation)
     private habilitationsRepository: Repository<Habilitation>,
-    private configService: ConfigService,
   ) {}
 
   async exec(
@@ -73,10 +71,7 @@ export class PublicationService {
 
     if (!habilitation) {
       await this.pause(balId);
-      throw new HttpException(
-        'Authorization not found',
-        HttpStatus.NOT_FOUND,
-      );
+      throw new HttpException('Authorization not found', HttpStatus.NOT_FOUND);
     }
 
     // On verifie que l'habilitation est valide
@@ -116,11 +111,10 @@ export class PublicationService {
       // SEND MAIL
       const editorUrl = getEditorUrl(baseLocale);
       const apiUrl = getApiUrl();
-      await this.mailerService.sendMail({
+      await this.transactionalEmailService.sendTemplateEmail({
         to: baseLocale.emails,
         subject: 'Your Local Address Base Has Been Published',
         template: 'bal-publication-notification',
-        bcc: this.configService.get('SMTP_BCC'),
         context: {
           baseLocale,
           codeCommune,

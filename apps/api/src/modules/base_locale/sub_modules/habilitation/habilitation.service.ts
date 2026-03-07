@@ -1,9 +1,7 @@
 import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { ObjectId } from 'mongodb';
-import { MailerService } from '@nestjs-modules/mailer';
 
 import {
   Habilitation,
@@ -17,6 +15,7 @@ import {
   getJurisdictionName,
 } from '@/shared/utils/fips.utils';
 import { getApiUrl } from '@/shared/utils/mailer.utils';
+import { TransactionalEmailService } from '@/shared/modules/transactional_email/transactional_email.service';
 
 @Injectable()
 export class HabilitationService {
@@ -28,9 +27,8 @@ export class HabilitationService {
     @InjectRepository(Habilitation)
     private habilitationsRepository: Repository<Habilitation>,
     private readonly baseLocaleService: BaseLocaleService,
-    private readonly mailerService: MailerService,
+    private readonly transactionalEmailService: TransactionalEmailService,
     private readonly logger: Logger,
-    private readonly configService: ConfigService,
   ) {}
 
   async findOne(habilitationId: string): Promise<Habilitation> {
@@ -187,86 +185,23 @@ export class HabilitationService {
 
     await this.habilitationsRepository.save(habilitation);
 
-    const smtpHost = this.configService.get<string>('SMTP_HOST');
-    const resendApiKey = this.configService.get<string>('RESEND_API_KEY');
-    const resendFrom =
-      this.configService.get<string>('RESEND_FROM') ||
-      this.configService.get<string>('SMTP_FROM') ||
-      'onboarding@resend.dev';
-    const isProduction =
-      this.configService.get<string>('RAILWAY_ENVIRONMENT') === 'production';
-
     // Send the PIN code email
     try {
       const jurisdictionName =
         getJurisdictionName(habilitation.codeCommune) ||
         habilitation.codeCommune;
 
-      if (smtpHost) {
-        await this.mailerService.sendMail({
-          to: email,
-          subject: 'National Address Platform — Verification Code',
-          template: 'pin-code-verification',
-          context: {
-            pinCode,
-            expirationMinutes: this.PIN_CODE_EXPIRATION_MINUTES,
-            jurisdictionName,
-            apiUrl: getApiUrl(),
-          },
-        });
-      } else if (resendApiKey) {
-        const html = `
-          <p>Your National Address Platform verification code is:</p>
-          <p><strong style="font-size: 28px; letter-spacing: 4px;">${pinCode}</strong></p>
-          <p>This code expires in ${this.PIN_CODE_EXPIRATION_MINUTES} minutes.</p>
-          <p>Jurisdiction: ${jurisdictionName}</p>
-        `;
-
-        const response = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: resendFrom,
-            to: email,
-            subject: 'National Address Platform — Verification Code',
-            html,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorBody = await response.text();
-          throw new Error(
-            `Resend email API failed (${response.status}): ${errorBody}`,
-          );
-        }
-      } else if (isProduction) {
-        // In production we must not silently "succeed" without real email delivery.
-        this.logger.error(
-          `SMTP and Resend are both unset in production. Cannot deliver PIN for authorization ${habilitationId}.`,
-          undefined,
-          HabilitationService.name,
-        );
-        throw new HttpException(
-          'Email delivery is not configured. Please contact an administrator.',
-          HttpStatus.SERVICE_UNAVAILABLE,
-        );
-      } else {
-        // In local/dev, keep stream transport behavior to avoid hard failures.
-        await this.mailerService.sendMail({
-          to: email,
-          subject: 'National Address Platform — Verification Code',
-          template: 'pin-code-verification',
-          context: {
-            pinCode,
-            expirationMinutes: this.PIN_CODE_EXPIRATION_MINUTES,
-            jurisdictionName,
-            apiUrl: getApiUrl(),
-          },
-        });
-      }
+      await this.transactionalEmailService.sendTemplateEmail({
+        to: email,
+        subject: 'National Address Platform — Verification Code',
+        template: 'pin-code-verification',
+        context: {
+          pinCode,
+          expirationMinutes: this.PIN_CODE_EXPIRATION_MINUTES,
+          jurisdictionName,
+          apiUrl: getApiUrl(),
+        },
+      });
 
       this.logger.log(
         `PIN code sent to ${email} for authorization ${habilitationId}`,

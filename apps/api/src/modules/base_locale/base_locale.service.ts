@@ -20,8 +20,6 @@ import {
 import { uniq, difference, groupBy } from 'lodash';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { MailerService } from '@nestjs-modules/mailer';
-import { ConfigService } from '@nestjs/config';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Job, Queue, QueueEvents } from 'bullmq';
 import { PriorityEnum } from '@/shared/types/task.type';
@@ -61,6 +59,7 @@ import { TaskTitle } from '@/shared/types/task.type';
 import { QUEUE_NAME } from '@/shared/params/queue_name.const';
 import { getEmailsMairie } from '@/lib/utils/annuaire-service-public';
 import { RecoverCommuneDTO } from './dto/recover_commune.dto';
+import { TransactionalEmailService } from '@/shared/modules/transactional_email/transactional_email.service';
 
 const KEY_POPULATE_BAL_ID = 'populateBalID';
 
@@ -70,7 +69,7 @@ export class BaseLocaleService {
     @InjectQueue(QUEUE_NAME) private taskQueue: Queue,
     @InjectRepository(BaseLocale)
     private basesLocalesRepository: Repository<BaseLocale>,
-    private readonly mailerService: MailerService,
+    private readonly transactionalEmailService: TransactionalEmailService,
     @Inject(forwardRef(() => VoieService))
     private voieService: VoieService,
     @Inject(forwardRef(() => ToponymeService))
@@ -81,7 +80,6 @@ export class BaseLocaleService {
     private populateService: PopulateService,
     @Inject(forwardRef(() => BanPlateformService))
     private banPlateformService: BanPlateformService,
-    private configService: ConfigService,
     private cacheService: CacheService,
     private readonly logger: Logger,
   ) {}
@@ -170,11 +168,10 @@ export class BaseLocaleService {
     // On envoie un mail de création de Bal
     const editorUrl = getEditorUrl(newBaseLocale);
     const apiUrl = getApiUrl();
-    await this.mailerService.sendMail({
+    await this.transactionalEmailService.sendTemplateEmail({
       to: newBaseLocale.emails,
       subject: 'New Local Address Base created',
       template: 'bal-creation-notification',
-      bcc: this.configService.get('SMTP_BCC'),
       context: {
         baseLocale: newBaseLocale,
         editorUrl,
@@ -308,11 +305,10 @@ export class BaseLocaleService {
       const editorUrl = getEditorUrl(baseLocale);
       const apiUrl = getApiUrl();
       if (newCollaborators?.length > 0) {
-        await this.mailerService.sendMail({
+        await this.transactionalEmailService.sendTemplateEmail({
           to: newCollaborators,
           subject: 'Invitation to administer a Local Address Base',
           template: 'new-admin-notification',
-          bcc: this.configService.get('SMTP_BCC'),
           context: {
             baseLocale,
             editorUrl,
@@ -352,11 +348,10 @@ export class BaseLocaleService {
     if (affected > 0) {
       const editorUrl = getEditorUrl(updatedBaseLocale);
       const apiUrl = getApiUrl();
-      await this.mailerService.sendMail({
+      await this.transactionalEmailService.sendTemplateEmail({
         to: updatedBaseLocale.emails,
         subject: 'New Local Address Base created',
         template: 'bal-creation-notification',
-        bcc: this.configService.get('SMTP_BCC'),
         context: {
           baseLocale: updatedBaseLocale,
           editorUrl,
@@ -541,11 +536,10 @@ export class BaseLocaleService {
             : null,
         }));
 
-      await this.mailerService.sendMail({
+      await this.transactionalEmailService.sendTemplateEmail({
         to: email,
         subject: 'Recovery request for your Local Address Bases',
         template: 'recovery-notification',
-        bcc: this.configService.get('SMTP_BCC'),
         context: {
           recoveryBals,
           deletedBals,
@@ -595,11 +589,10 @@ export class BaseLocaleService {
       const apiUrl = getApiUrl();
       const recoveryUrl = getEditorUrl(baseLocale);
 
-      await this.mailerService.sendMail({
+      await this.transactionalEmailService.sendTemplateEmail({
         to: emails,
         subject: `Demande de récupération de la Bases Adresses Locales de ${baseLocale.communeNom}`,
         template: 'recovery-commune-notification',
-        bcc: this.configService.get('SMTP_BCC'),
         context: {
           apiUrl,
           recoveryUrl,
@@ -643,11 +636,10 @@ export class BaseLocaleService {
     if (affected > 0) {
       const editorUrl = getEditorUrl(updatedBaseLocale);
       const apiUrl = getApiUrl();
-      await this.mailerService.sendMail({
+      await this.transactionalEmailService.sendTemplateEmail({
         to: updatedBaseLocale.emails,
         subject: 'Local Address Base Token Renewal',
         template: 'bal-renewal-notification',
-        bcc: this.configService.get('SMTP_BCC'),
         context: {
           baseLocale: updatedBaseLocale,
           editorUrl,

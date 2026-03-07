@@ -167,6 +167,12 @@ Elles peuvent être définies classiquement ou en créant un fichier `.env` sur 
 
 Toutes ces variables ont des valeurs par défaut que vous trouverez dans le fichier `.env.sample`.
 
+Comportement de livraison email:
+
+- Si `SMTP_HOST` est défini, tous les emails transactionnels partent via SMTP.
+- Si `SMTP_HOST` est vide et `RESEND_API_KEY` est défini, tous les emails transactionnels partent via l’API HTTPS Resend.
+- Si aucun des deux n’est défini, l’environnement local conserve le transport de test (emails loggés), mais un environnement de production renverra une erreur `503` pour éviter les faux positifs de livraison.
+
 ## Gouvernance
 
 Ce outil a été conçu à l'initiative d'Etalab. Il est depuis 2020 piloté conjointement par Etalab et l'ANCT.
