@@ -9,12 +9,51 @@ import {
 } from '@nestjs/swagger';
 
 import { CommuneService } from './commune.service';
-import { CommuneDTO } from './dto/commune.dto';
+import {
+  CommuneDTO,
+  JurisdictionCountyDTO,
+  JurisdictionPlaceDTO,
+  JurisdictionStateDTO,
+} from './dto/commune.dto';
 
 @ApiTags('commune')
 @Controller(['commune', 'jurisdictions'])
 export class CommuneController {
   constructor(private communeService: CommuneService) {}
+
+  @Get('states')
+  @ApiOperation({
+    summary: 'List states for the jurisdiction selector',
+    operationId: 'listStates',
+  })
+  @ApiResponse({ status: 200, type: JurisdictionStateDTO, isArray: true })
+  async listStates(@Res() res: Response) {
+    res.status(HttpStatus.OK).json(this.communeService.listStates());
+  }
+
+  @Get('states/:stateFips/counties')
+  @ApiOperation({
+    summary: 'List counties in a state for the jurisdiction selector',
+    operationId: 'listCounties',
+  })
+  @ApiParam({ name: 'stateFips', required: true, type: String })
+  @ApiResponse({ status: 200, type: JurisdictionCountyDTO, isArray: true })
+  async listCounties(@Req() req: Request, @Res() res: Response) {
+    const { stateFips } = req.params;
+    res.status(HttpStatus.OK).json(this.communeService.listCounties(stateFips));
+  }
+
+  @Get('counties/:countyFips/places')
+  @ApiOperation({
+    summary: 'List places in a county for the jurisdiction selector',
+    operationId: 'listPlaces',
+  })
+  @ApiParam({ name: 'countyFips', required: true, type: String })
+  @ApiResponse({ status: 200, type: JurisdictionPlaceDTO, isArray: true })
+  async listPlaces(@Req() req: Request, @Res() res: Response) {
+    const { countyFips } = req.params;
+    res.status(HttpStatus.OK).json(this.communeService.listPlaces(countyFips));
+  }
 
   @Get('search')
   @ApiOperation({

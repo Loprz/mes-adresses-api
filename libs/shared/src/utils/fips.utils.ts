@@ -256,6 +256,38 @@ export function getPlacesByCounty(countyFips: string): USPlace[] {
   );
 }
 
+/**
+ * Get all places that should appear under a county selector.
+ *
+ * Most places map directly through `countyFips`, but some Census place records
+ * span multiple counties and store a comma-separated `countyName` list instead.
+ * Those should still be selectable from each matching county.
+ */
+export function getSelectablePlacesByCounty(countyFips: string): USPlace[] {
+  const county = getCounty(countyFips);
+
+  if (!county) {
+    return [];
+  }
+
+  const countyName = county.name.trim().toLowerCase();
+
+  return Object.values(placesIndex).filter((place) => {
+    if (place.countyFips === countyFips) {
+      return true;
+    }
+
+    if (place.stateFips !== county.stateFips || !place.countyName) {
+      return false;
+    }
+
+    return place.countyName
+      .split(',')
+      .map((name) => name.trim().toLowerCase())
+      .includes(countyName);
+  });
+}
+
 // ─── Search functions ────────────────────────────────────────────────────────
 
 export type JurisdictionSearchResult = {
