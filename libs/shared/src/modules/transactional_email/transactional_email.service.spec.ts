@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
 
@@ -129,7 +130,41 @@ describe('TransactionalEmailService', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('falls back to local stream transport outside production when email is not configured', async () => {
+  it('throws 503 on Railway when the environment name is production (RAILWAY_ENVIRONMENT_NAME)', async () => {
+    configValues.RAILWAY_ENVIRONMENT_NAME = 'production';
+
+    await expect(
+      service.sendTemplateEmail({
+        to: 'test@example.com',
+        subject: 'Verification',
+        template: 'pin-code-verification',
+      }),
+    ).rejects.toMatchObject({ status: 503 });
+
+    expect(sendMail).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('throws 503 when a Railway runtime identifier is present even without an env name', async () => {
+    configValues.RAILWAY_PROJECT_ID = 'proj_abc123';
+
+    await expect(
+      service.sendTemplateEmail({
+        to: 'test@example.com',
+        subject: 'Verification',
+        template: 'pin-code-verification',
+      }),
+    ).rejects.toMatchObject({ status: 503 });
+
+    expect(sendMail).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('falls back to local stream transport outside production but logs a loud warning', async () => {
+    const warnSpy = jest
+      .spyOn(Logger.prototype, 'warn')
+      .mockImplementation(() => undefined);
+
     await service.sendTemplateEmail({
       to: 'test@example.com',
       subject: 'Verification',
@@ -152,5 +187,7 @@ describe('TransactionalEmailService', () => {
       },
     });
     expect(fetchMock).not.toHaveBeenCalled();
+    expect(warnSpy).toHaveBeenCalledTimes(1);
+    expect(warnSpy.mock.calls[0][0]).toContain('was NOT delivered');
   });
 });

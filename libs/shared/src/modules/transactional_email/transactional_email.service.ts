@@ -57,13 +57,21 @@ export class TransactionalEmailService {
 
     if (this.requiresExternalDelivery()) {
       this.logger.error(
-        `SMTP and Resend are both unset in production. Cannot deliver template "${options.template}".`,
+        `SMTP and Resend are both unset in a deployed environment. Cannot deliver template "${options.template}".`,
       );
       throw new HttpException(
         'Email delivery is not configured. Please contact an administrator.',
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
+
+    // Local development only. The stream transport does NOT deliver mail, so
+    // log loudly — this must never be mistaken for a successful send.
+    this.logger.warn(
+      `No SMTP or Resend transport configured; template "${options.template}" to ` +
+        `${this.normalizeRecipients(options.to).join(', ')} was NOT delivered ` +
+        `(local stream transport). Set SMTP_HOST or RESEND_API_KEY to send real email.`,
+    );
 
     await this.mailerService.sendMail({
       ...options,
@@ -159,9 +167,35 @@ export class TransactionalEmailService {
   }
 
   private requiresExternalDelivery(): boolean {
-    return (
-      this.getConfiguredValue('NODE_ENV') === 'production' ||
-      this.getConfiguredValue('RAILWAY_ENVIRONMENT') === 'production'
-    );
+    // Any deployed environment must deliver real email. The local stream
+    // transport is only acceptable on a developer machine. Detecting this
+    // robustly matters: a missed signal silently drops mail while still
+    // returning success.
+    const nodeEnv = this.getConfiguredValue('NODE_ENV')?.toLowerCase();
+    if (nodeEnv === 'production' || nodeEnv === 'staging') {
+      return true;
+    }
+
+    // Railway exposes the environment name under different keys across
+    // platform versions; check both.
+    const railwayEnvName = (
+      this.getConfiguredValue('RAILWAY_ENVIRONMENT_NAME') ||
+      this.getConfiguredValue('RAILWAY_ENVIRONMENT') ||
+      ''
+    ).toLowerCase();
+    if (railwayEnvName === 'production' || railwayEnvName === 'staging') {
+      return true;
+    }
+
+    // Even if the environment name is unset/custom, the presence of any Railway
+    // runtime identifier means we are running on Railway, not locally, and must
+    // use a real transport rather than silently discarding mail.
+    return [
+      'RAILWAY_PROJECT_ID',
+      'RAILWAY_SERVICE_ID',
+      'RAILWAY_ENVIRONMENT_ID',
+      'RAILWAY_PUBLIC_DOMAIN',
+      'RAILWAY_PRIVATE_DOMAIN',
+    ].some((key) => Boolean(this.getConfiguredValue(key)));
   }
 }
