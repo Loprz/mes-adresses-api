@@ -52,6 +52,20 @@ export class BaseLocaleSync {
   currentUpdated?: Date;
 }
 
+export class BaseLocaleOvertureImport {
+  @ApiProperty({ description: 'Overture release this LAB was imported from' })
+  release: string;
+
+  @ApiProperty({ description: 'When the import (or last chunk) completed' })
+  importedAt: string;
+
+  @ApiProperty({ description: 'Number of import chunks (POSTs) applied so far' })
+  chunks: number;
+
+  @ApiProperty({ description: 'Running total of address numbers imported' })
+  addressCount: number;
+}
+
 @Entity({ name: 'bases_locales' })
 export class BaseLocale extends GlobalEntity {
   @ApiProperty()
@@ -92,6 +106,10 @@ export class BaseLocale extends GlobalEntity {
   @ApiProperty({ type: () => BaseLocaleSetting })
   @Column('jsonb', { nullable: true })
   settings: BaseLocaleSetting | null;
+
+  @ApiProperty({ type: () => BaseLocaleOvertureImport })
+  @Column('jsonb', { name: 'overture_import', nullable: true })
+  overtureImport: BaseLocaleOvertureImport | null;
 
   @ApiProperty({ type: () => Voie, isArray: true })
   @OneToMany(() => Voie, (voie) => voie.baseLocale)

@@ -32,11 +32,19 @@ import re
 import sys
 import time
 
+# Local helper (scripts/ is on sys.path when run as a script).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from overture_release import resolve_release  # noqa: E402
+
 # ──────────────────────────────────────────────────────────────────────────────
 # Overture release and API configuration
 # ──────────────────────────────────────────────────────────────────────────────
 
-OVERTURE_RELEASE = "2026-01-21.0"
+# NOTE: load_overture.py is the go-forward, US-scalable loader. This script is
+# retained for single-jurisdiction and Overture locality-boundary imports.
+# The release is resolved at runtime (STAC latest) in main(); this is only a
+# fallback so the module imports without a network call.
+OVERTURE_RELEASE = "2026-05-20.0"
 OVERTURE_S3_PATH = f"s3://overturemaps-us-west-2/release/{OVERTURE_RELEASE}/theme=addresses/type=address/*"
 OVERTURE_DIVISIONS_PATH = (
     f"s3://overturemaps-us-west-2/release/{OVERTURE_RELEASE}/theme=divisions/type=division/*"
@@ -45,6 +53,17 @@ OVERTURE_DIVISION_AREAS_PATH = (
     f"s3://overturemaps-us-west-2/release/{OVERTURE_RELEASE}/theme=divisions/type=division_area/*"
 )
 API_BASE = os.environ.get("NAP_API_URL", "http://localhost:5050")
+
+
+def _set_release(release: str) -> None:
+    """Repoint the S3 path globals at a resolved Overture release."""
+    global OVERTURE_RELEASE, OVERTURE_S3_PATH
+    global OVERTURE_DIVISIONS_PATH, OVERTURE_DIVISION_AREAS_PATH
+    OVERTURE_RELEASE = release
+    base = f"s3://overturemaps-us-west-2/release/{release}"
+    OVERTURE_S3_PATH = f"{base}/theme=addresses/type=address/*"
+    OVERTURE_DIVISIONS_PATH = f"{base}/theme=divisions/type=division/*"
+    OVERTURE_DIVISION_AREAS_PATH = f"{base}/theme=divisions/type=division_area/*"
 API_IMPORT_ENDPOINT = f"{API_BASE}/v2/overture/import"
 
 # County bounding boxes for Overture spatial filtering (approx)
@@ -272,12 +291,12 @@ def send_to_api(fips: str, addresses: list, email: str | None = None, chunk_size
     print(f"  API endpoint: {API_IMPORT_ENDPOINT}")
     print(f"  Chunk size: {chunk_size:,}")
 
-    # For the first chunk, we create the LAB. For subsequent chunks,
-    # we'd need a different strategy. For now, send all at once or in
-    # one big batch — the API handles chunked DB inserts internally.
+    # Single-payload import. For very large counties that exceed the API body
+    # limit, use load_overture.py (chunked + append).
     payload = {
         "fipsCode": fips,
         "addresses": addresses,
+        "release": OVERTURE_RELEASE,
     }
     if email:
         payload["email"] = email
@@ -371,8 +390,17 @@ def main():
             "'auto' enables this for 7-digit place FIPS."
         ),
     )
+    parser.add_argument(
+        "--release",
+        default=None,
+        help="Overture release (default: STAC latest, or OVERTURE_RELEASE env)",
+    )
 
     args = parser.parse_args()
+
+    # Resolve the Overture release (STAC latest unless pinned) and repoint paths.
+    _set_release(resolve_release(args.release))
+    print(f"Overture release: {OVERTURE_RELEASE}")
 
     if args.api_url:
         global API_IMPORT_ENDPOINT

@@ -528,3 +528,34 @@ export function getJurisdictionEmails(fipsCode: string): string[] {
   // County
   return [`clerk@${cleanName}-county.${stateAbbr}.gov`];
 }
+
+/**
+ * Whether a jurisdiction has explicitly pre-registered emails (vs. relying on
+ * the generated placeholder pattern).
+ */
+export function isEmailRegistered(fipsCode: string): boolean {
+  return (
+    (fipsCode.length === 7 && !!placeEmailsIndex[fipsCode]) ||
+    (fipsCode.length === 5 && !!countyEmailsIndex[fipsCode])
+  );
+}
+
+/**
+ * The full pre-registered jurisdiction → email registry (counties + places).
+ * Source of truth: us-jurisdiction-emails.json. Admin-only.
+ */
+export function getAllRegisteredJurisdictionEmails(): {
+  counties: Record<string, { name?: string; emails: string[] }>;
+  places: Record<string, { name?: string; emails: string[] }>;
+} {
+  return {
+    counties: countyEmailsIndex as Record<
+      string,
+      { name?: string; emails: string[] }
+    >,
+    places: placeEmailsIndex as Record<
+      string,
+      { name?: string; emails: string[] }
+    >,
+  };
+}

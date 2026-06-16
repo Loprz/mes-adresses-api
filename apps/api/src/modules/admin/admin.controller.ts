@@ -4,6 +4,7 @@ import {
   Get,
   HttpStatus,
   Post,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
@@ -27,6 +28,12 @@ import {
 import { BaseLocale } from '@/shared/entities/base_locale.entity';
 import { FusionCommunesDTO } from './dto/fusion_bases_locales.dto';
 import { AdminService } from './admin.service';
+import {
+  getAllRegisteredJurisdictionEmails,
+  getJurisdictionEmails,
+  getJurisdictionName,
+  isEmailRegistered,
+} from '@/shared/utils/fips.utils';
 
 @ApiTags('admin')
 @Controller('admin')
@@ -61,6 +68,31 @@ export class AdminController {
       .attachment('emails.csv')
       .type('csv')
       .send(csvFile);
+  }
+
+  @Get('/jurisdiction-emails')
+  @ApiOperation({
+    summary: 'Look up the authorized emails for a jurisdiction (admin only)',
+    operationId: 'getJurisdictionEmails',
+    description:
+      'With ?fips=, returns the emails that may receive PIN codes for that ' +
+      'jurisdiction. Without it, returns the full pre-registered registry. ' +
+      'Requires the admin bearer token.',
+  })
+  @ApiResponse({ status: HttpStatus.OK })
+  @ApiBearerAuth('admin-token')
+  @UseGuards(SuperAdminGuard)
+  async getJurisdictionEmails(@Res() res: Response, @Query('fips') fips?: string) {
+    if (fips) {
+      res.status(HttpStatus.OK).json({
+        fips,
+        name: getJurisdictionName(fips) || null,
+        registered: isEmailRegistered(fips),
+        emails: getJurisdictionEmails(fips),
+      });
+      return;
+    }
+    res.status(HttpStatus.OK).json(getAllRegisteredJurisdictionEmails());
   }
 
   @Post('/fusion-communes')

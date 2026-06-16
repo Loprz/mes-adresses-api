@@ -38,3 +38,6 @@ lerna-debug.log*
 contours-communes.json
 
 .cursorrules
+# Python bytecode
+__pycache__/
+*.pyc

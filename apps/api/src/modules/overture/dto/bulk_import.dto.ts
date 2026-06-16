@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsOptional,
   IsEmail,
+  IsBoolean,
   ArrayMinSize,
   ValidateNested,
 } from 'class-validator';
@@ -84,6 +85,41 @@ export class BulkImportOvertureDTO {
   @IsEmail()
   @IsOptional()
   email?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Overture release version this batch was extracted from (e.g. 2026-05-20.0). ' +
+      'Stored on the LAB for idempotency and recorded as provenance on each address.',
+    example: '2026-05-20.0',
+  })
+  @IsString()
+  @IsOptional()
+  release?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Append this batch to an existing LAB instead of creating a new one. ' +
+      'Used to load large counties across multiple chunked POSTs. Requires ' +
+      'balId and token from the first (non-append) chunk.',
+    example: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  append?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Target LAB id when append=true.',
+  })
+  @IsString()
+  @IsOptional()
+  balId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Target LAB token when append=true (authorizes the append).',
+  })
+  @IsString()
+  @IsOptional()
+  token?: string;
 
   @ApiProperty({
     description: 'Array of Overture address records to import',

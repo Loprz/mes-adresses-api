@@ -11,6 +11,7 @@ import { Toponyme } from '@/shared/entities/toponyme.entity';
 import { Position } from '@/shared/entities/position.entity';
 import { Cache } from '@/shared/entities/cache.entity';
 import { Habilitation } from '@/shared/entities/habilitation.entity';
+import { NumeroNg911 } from '@/shared/entities/numero_ng911.entity';
 
 import { NumeroModule } from './modules/numeros/numero.module';
 import { BaseLocaleModule } from './modules/base_locale/base_locale.module';
@@ -22,6 +23,7 @@ import { MailerParams } from '@/shared/params/mailer.params';
 import { AdminModule } from './modules/admin/admin.module';
 import { SignalementModule } from './modules/signalement/signalement.module';
 import { OvertureApiModule } from './modules/overture/overture.module';
+import { Ng911ApiModule } from './modules/ng911/ng911.module';
 import { BullModule } from '@nestjs/bullmq';
 import { HealthController } from './health.controller';
 
@@ -39,7 +41,7 @@ import { HealthController } from './health.controller';
         url: config.get('POSTGRES_URL'),
         keepConnectionAlive: true,
         schema: 'public',
-        entities: [BaseLocale, Voie, Numero, Toponyme, Position, Cache, Habilitation],
+        entities: [BaseLocale, Voie, Numero, Toponyme, Position, Cache, Habilitation, NumeroNg911],
       }),
       inject: [ConfigService],
     }),
@@ -83,6 +85,7 @@ import { HealthController } from './health.controller';
     AdminModule,
     SignalementModule,
     OvertureApiModule,
+    Ng911ApiModule,
   ],
   controllers: [HealthController],
   providers: [],

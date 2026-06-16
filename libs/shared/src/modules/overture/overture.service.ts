@@ -266,10 +266,18 @@ export class OvertureService {
    * @returns Import result summary
    */
   async bulkImportFromOverture(
-    fipsCode: string,
-    addresses: OvertureAddressInput[],
-    email?: string,
+    params: {
+      fipsCode: string;
+      addresses: OvertureAddressInput[];
+      email?: string;
+      release?: string;
+      append?: boolean;
+      balId?: string;
+      token?: string;
+    },
   ): Promise<OvertureBulkImportResult> {
+    const { fipsCode, addresses, email } = params;
+    const release = params.release || 'unknown';
     const startTime = Date.now();
 
     // Validate jurisdiction
@@ -281,36 +289,79 @@ export class OvertureService {
       getJurisdictionName(fipsCode) || `Jurisdiction ${fipsCode}`;
 
     this.logger.log(
-      `Starting Overture bulk import for ${jurisdictionName} (${fipsCode}): ${addresses.length} addresses`,
+      `Overture import for ${jurisdictionName} (${fipsCode}): ` +
+        `${addresses.length} addresses` +
+        (params.append ? ` [append → LAB ${params.balId}]` : ''),
     );
 
-    // ── Step 1: Create the LAB ──────────────────────────────────────────
-    const token = this.generateToken(20);
+    // ── Step 1: Resolve target LAB (create new, or append to existing) ───
+    let bal: BaseLocale;
+    if (params.append) {
+      if (!params.balId || !params.token) {
+        throw new Error('append requires both balId and token');
+      }
+      bal = await this.baseLocaleRepository.findOne({
+        where: { id: params.balId },
+      });
+      if (!bal) {
+        throw new Error(`Target LAB ${params.balId} not found`);
+      }
+      if (bal.token !== params.token) {
+        throw new Error('Invalid token for append target');
+      }
+      if (bal.commune !== fipsCode) {
+        throw new Error(
+          `FIPS mismatch: LAB ${bal.id} is ${bal.commune}, not ${fipsCode}`,
+        );
+      }
+    } else {
+      const balEntity = this.baseLocaleRepository.create({
+        banId: uuid(),
+        token: this.generateToken(20),
+        commune: fipsCode,
+        nom: `Addresses of ${jurisdictionName}`,
+        emails: email ? [email] : ['overture-import@nap.gov'],
+        status: StatusBaseLocalEnum.DRAFT,
+        settings: {
+          languageGoalIgnored: false,
+          toponymeGoalIgnored: false,
+        },
+        overtureImport: {
+          release,
+          importedAt: new Date().toISOString(),
+          chunks: 0,
+          addressCount: 0,
+        },
+      });
+      bal = await this.baseLocaleRepository.save(balEntity);
+      this.logger.log(`Created LAB ${bal.id} for ${jurisdictionName}`);
+    }
+    const balId = bal.id;
 
-    const balEntity = this.baseLocaleRepository.create({
-      banId: uuid(),
-      token,
-      commune: fipsCode,
-      nom: `Addresses of ${jurisdictionName}`,
-      emails: email ? [email] : ['overture-import@nap.gov'],
-      status: StatusBaseLocalEnum.DRAFT,
-      settings: {
-        languageGoalIgnored: false,
-        toponymeGoalIgnored: false,
-      },
-    });
-    const savedBal = await this.baseLocaleRepository.save(balEntity);
-    const balId = savedBal.id;
-    this.logger.log(`Created LAB ${balId} for ${jurisdictionName}`);
-
-    // ── Step 2: Group addresses by street → create Voies ────────────────
+    // ── Step 2: Group addresses by street → create/reuse Voies ──────────
     const streetMap = new Map<string, {
       voieId: string;
       banId: string;
       nom: string;
+      isNew: boolean;
       addresses: OvertureAddressInput[];
     }>();
     let skipped = 0;
+
+    // When appending, pre-load existing streets so new chunks reuse the same
+    // voie instead of creating duplicates.
+    if (params.append) {
+      const existingVoies = await this.voieRepository.find({ where: { balId } });
+      for (const v of existingVoies) {
+        streetMap.set(v.nom.trim().toUpperCase(), {
+          voieId: v.id,
+          banId: v.banId,
+          nom: v.nom,
+          isNew: false,
+          addresses: [],
+        });
+      }
+    }
 
     for (const addr of addresses) {
       // Skip addresses without street or number
@@ -327,18 +378,20 @@ export class OvertureService {
           voieId: new ObjectId().toHexString(),
           banId: uuid(),
           nom: streetNom,
+          isNew: true,
           addresses: [],
         });
       }
       streetMap.get(streetKey).addresses.push(addr);
     }
 
-    // Bulk insert voies in chunks
+    // Bulk insert only NEW voies in chunks (existing ones are reused on append).
     const voieEntries = Array.from(streetMap.values());
+    const newVoieEntries = voieEntries.filter((e) => e.isNew);
     const CHUNK_SIZE = 500;
 
-    for (let i = 0; i < voieEntries.length; i += CHUNK_SIZE) {
-      const chunk = voieEntries.slice(i, i + CHUNK_SIZE);
+    for (let i = 0; i < newVoieEntries.length; i += CHUNK_SIZE) {
+      const chunk = newVoieEntries.slice(i, i + CHUNK_SIZE);
       const voieValues = chunk.map((entry) => ({
         id: entry.voieId,
         balId,
@@ -356,7 +409,7 @@ export class OvertureService {
     }
 
     this.logger.log(
-      `Created ${voieEntries.length} streets for LAB ${balId}`,
+      `Created ${newVoieEntries.length} new streets for LAB ${balId}`,
     );
 
     // ── Step 3: Create Numeros with Positions ───────────────────────────
@@ -398,12 +451,12 @@ export class OvertureService {
                 dataset: addr.sources[0].dataset,
                 confidence: addr.sources[0].confidence,
                 importedAt: new Date().toISOString(),
-                release: '2026-01-21.0',
+                release,
               }
             : {
                 dataset: 'overture-maps',
                 importedAt: new Date().toISOString(),
-                release: '2026-01-21.0',
+                release,
               },
         });
 
@@ -453,11 +506,22 @@ export class OvertureService {
       `Created ${addressesCreated} addresses and ${positionsCreated} positions`,
     );
 
-    // ── Step 4: Calculate Voie centroids ────────────────────────────────
+    // ── Step 4: Recompute centroids for streets touched this chunk ──────
     this.logger.log('Calculating street centroids...');
     for (const entry of voieEntries) {
+      if (entry.addresses.length === 0) continue;
       await this.calculateVoieCentroid(entry.voieId);
     }
+
+    // ── Step 5: Record import provenance on the LAB (idempotency) ────────
+    const prior = bal.overtureImport;
+    bal.overtureImport = {
+      release,
+      importedAt: new Date().toISOString(),
+      chunks: (prior?.chunks || 0) + 1,
+      addressCount: (prior?.addressCount || 0) + addressesCreated,
+    };
+    await this.baseLocaleRepository.save(bal);
 
     const durationMs = Date.now() - startTime;
     this.logger.log(
@@ -466,16 +530,48 @@ export class OvertureService {
 
     return {
       balId,
-      token,
+      token: bal.token,
       fipsCode,
       jurisdictionName,
       totalInput: addresses.length,
-      streetsCreated: voieEntries.length,
+      streetsCreated: newVoieEntries.length,
       addressesCreated,
       positionsCreated,
       gersIdsLinked,
       skipped,
       durationMs,
+    };
+  }
+
+  /**
+   * Idempotency lookup: find a LAB already imported for (fipsCode, release).
+   * Used by the loader's --skip-existing to avoid duplicate imports.
+   */
+  async findImportedLab(
+    fipsCode: string,
+    release?: string,
+  ): Promise<{
+    balId: string;
+    token: string;
+    release: string;
+    addressCount: number;
+    chunks: number;
+  } | null> {
+    const candidates = await this.baseLocaleRepository.find({
+      where: { commune: fipsCode },
+    });
+    const match = candidates.find(
+      (b) =>
+        b.overtureImport &&
+        (!release || b.overtureImport.release === release),
+    );
+    if (!match || !match.overtureImport) return null;
+    return {
+      balId: match.id,
+      token: match.token,
+      release: match.overtureImport.release,
+      addressCount: match.overtureImport.addressCount,
+      chunks: match.overtureImport.chunks,
     };
   }
 

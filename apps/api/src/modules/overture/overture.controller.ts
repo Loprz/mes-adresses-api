@@ -157,11 +157,15 @@ export class OvertureController {
     );
 
     try {
-      const result = await this.overtureService.bulkImportFromOverture(
-        body.fipsCode,
-        body.addresses,
-        body.email,
-      );
+      const result = await this.overtureService.bulkImportFromOverture({
+        fipsCode: body.fipsCode,
+        addresses: body.addresses,
+        email: body.email,
+        release: body.release,
+        append: body.append,
+        balId: body.balId,
+        token: body.token,
+      });
 
       return {
         success: true,
@@ -178,6 +182,30 @@ export class OvertureController {
         HttpStatus.BAD_REQUEST,
       );
     }
+  }
+
+  @Get('lab')
+  @ApiOperation({
+    summary: 'Look up an existing Overture import by FIPS (+ release)',
+    description:
+      'Idempotency helper for the loader: returns the LAB already imported for ' +
+      'a jurisdiction (optionally pinned to an Overture release), or null. Lets ' +
+      'the loader skip or resume counties instead of creating duplicates.',
+  })
+  @ApiQuery({ name: 'fips', description: '5-digit county or 7-digit place FIPS' })
+  @ApiQuery({
+    name: 'release',
+    required: false,
+    description: 'Overture release (e.g. 2026-05-20.0). Omit to match any release.',
+  })
+  async findImportedLab(
+    @Query('fips') fips: string,
+    @Query('release') release?: string,
+  ) {
+    if (!fips) {
+      throw new HttpException('fips is required', HttpStatus.BAD_REQUEST);
+    }
+    return (await this.overtureService.findImportedLab(fips, release)) || {};
   }
 
   @Get('stats/:balId')
