@@ -425,12 +425,35 @@ export class BaseLocaleController {
     operationId: 'populateBaseLocale',
   })
   @ApiParam({ name: 'baseLocaleId', required: true, type: String })
+  @ApiQuery({
+    name: 'source',
+    required: false,
+    enum: ['ban', 'overture'],
+    description:
+      'Data source to populate from. "ban" (default) reads preloaded data ' +
+      'from api-depot/ban-plateforme. "overture" runs an on-demand Overture ' +
+      'extract for the jurisdiction and materializes it into the LAB.',
+  })
+  @ApiQuery({
+    name: 'fips',
+    required: false,
+    type: String,
+    description:
+      'Override the jurisdiction FIPS for an Overture extract. Defaults to the ' +
+      "LAB's commune code.",
+  })
   @ApiResponse({ status: HttpStatus.OK, type: BaseLocale })
   @ApiBearerAuth('admin-token')
   @UseGuards(AdminGuard)
-  async populate(@Req() req: CustomRequest, @Res() res: Response) {
+  async populate(
+    @Req() req: CustomRequest,
+    @Res() res: Response,
+    @Query('source') source?: 'ban' | 'overture',
+    @Query('fips') fips?: string,
+  ) {
     const populatedBAL = await this.baseLocaleService.extractAndPopulate(
       req.baseLocale,
+      { source: source === 'overture' ? 'overture' : 'ban', fips },
     );
 
     res.status(HttpStatus.OK).json(populatedBAL);

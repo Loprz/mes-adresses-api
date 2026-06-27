@@ -19,6 +19,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { OvertureService } from '@/shared/modules/overture/overture.service';
+import { OvertureExtractService } from '@/shared/modules/overture/extract/overture-extract.service';
 import { LinkGersDTO } from './dto/link_gers.dto';
 import { BulkImportOvertureDTO } from './dto/bulk_import.dto';
 
@@ -27,7 +28,10 @@ import { BulkImportOvertureDTO } from './dto/bulk_import.dto';
 export class OvertureController {
   private readonly logger = new Logger(OvertureController.name);
 
-  constructor(private readonly overtureService: OvertureService) {}
+  constructor(
+    private readonly overtureService: OvertureService,
+    private readonly overtureExtractService: OvertureExtractService,
+  ) {}
 
   @Get('gers/:gersId')
   @ApiOperation({
@@ -206,6 +210,64 @@ export class OvertureController {
       throw new HttpException('fips is required', HttpStatus.BAD_REQUEST);
     }
     return (await this.overtureService.findImportedLab(fips, release)) || {};
+  }
+
+  @Get('buildings')
+  @ApiOperation({
+    summary: 'Get Overture building footprints for a viewport bbox',
+    description:
+      'Returns building footprints (Overture Buildings theme, GA) overlapping ' +
+      'the given bounding box as a GeoJSON FeatureCollection. Each feature ' +
+      'carries its GERS ID so the editor can drop a building-typed address ' +
+      'linked back to Overture. Intended for a viewport-driven map layer at ' +
+      'high zoom.',
+  })
+  @ApiQuery({
+    name: 'bbox',
+    description: 'Viewport bbox as "minLng,minLat,maxLng,maxLat" (WGS84)',
+    example: '-119.10,36.20,-119.05,36.24',
+  })
+  @ApiQuery({
+    name: 'release',
+    required: false,
+    description: 'Overture release (e.g. 2026-06-17.0). Omit for latest.',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Max footprints to return (default 5000).',
+  })
+  async getBuildings(
+    @Query('bbox') bbox: string,
+    @Query('release') release?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const parts = (bbox || '').split(',').map((p) => Number(p.trim()));
+    if (parts.length !== 4 || parts.some((n) => !Number.isFinite(n))) {
+      throw new HttpException(
+        'bbox is required as "minLng,minLat,maxLng,maxLat"',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const parsedLimit = limit ? parseInt(limit, 10) : undefined;
+    try {
+      const result = await this.overtureExtractService.extractBuildings(
+        parts as [number, number, number, number],
+        release,
+        parsedLimit,
+      );
+      return {
+        type: 'FeatureCollection',
+        features: result.features,
+        release: result.release,
+      };
+    } catch (error) {
+      this.logger.error(`Buildings extract failed: ${error.message}`);
+      throw new HttpException(
+        `Buildings extract failed: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Get('stats/:balId')

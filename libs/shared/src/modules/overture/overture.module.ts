@@ -6,12 +6,13 @@ import { Voie } from '../../entities/voie.entity';
 import { Toponyme } from '../../entities/toponyme.entity';
 import { Position } from '../../entities/position.entity';
 import { OvertureService } from './overture.service';
+import { OvertureExtractService } from './extract/overture-extract.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([BaseLocale, Numero, Voie, Toponyme, Position]),
   ],
-  providers: [OvertureService],
-  exports: [OvertureService],
+  providers: [OvertureService, OvertureExtractService],
+  exports: [OvertureService, OvertureExtractService],
 })
 export class OvertureModule {}

@@ -14,6 +14,7 @@ import { BaseLocaleService } from '@/modules/base_locale/base_locale.service';
 import { PublicationModule } from '@/shared/modules/publication/publication.module';
 import { SearchQueryPipe } from './pipe/search_query.pipe';
 import { BanPlateformModule } from '@/shared/modules/ban_plateform/ban_plateform.module';
+import { OvertureModule } from '@/shared/modules/overture/overture.module';
 import { BaseLocale } from '@/shared/entities/base_locale.entity';
 
 import { HabilitationModule } from '@/modules/base_locale/sub_modules/habilitation/habilitation.module';
@@ -43,6 +44,7 @@ import { TransactionalEmailService } from '@/shared/modules/transactional_email/
       },
     }),
     forwardRef(() => BanPlateformModule),
+    OvertureModule,
     forwardRef(() => HabilitationModule),
     forwardRef(() => ExportCsvModule),
     forwardRef(() => TilesModule),

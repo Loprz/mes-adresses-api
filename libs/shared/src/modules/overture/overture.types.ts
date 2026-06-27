@@ -150,6 +150,51 @@ export type OvertureAddressInput = {
 };
 
 /**
+ * Input format for a single Overture transportation segment to import as a
+ * street (voie). Used by the streets fallback (Phase 2): when a jurisdiction has
+ * no/few Overture address points, we seed the editable street network from the
+ * Overture Transportation theme so the base is never empty.
+ */
+export type OvertureStreetInput = {
+  gersId: string; // Overture GERS ID of the transportation segment (UUID)
+  name: string; // Street name (names.primary)
+  class?: string; // Road class (e.g. residential, primary)
+  geometry: {
+    type: 'LineString';
+    coordinates: [number, number][]; // WGS84 [lon, lat] vertices
+  };
+};
+
+/**
+ * A single Overture building footprint, served to the map as a GeoJSON feature
+ * (Phase 3). The GERS ID rides in properties so a click-to-place interaction can
+ * link the new address back to the Overture building.
+ */
+export type OvertureBuildingFeature = {
+  type: 'Feature';
+  geometry: { type: string; coordinates: any };
+  properties: { gersId: string; class?: string };
+};
+
+export type OvertureBuildingsExtractResult = {
+  release: string;
+  features: OvertureBuildingFeature[];
+  scanned: number;
+};
+
+/**
+ * Result of a streets bulk import operation.
+ */
+export type OvertureStreetsImportResult = {
+  balId: string;
+  fipsCode: string;
+  streetsCreated: number;
+  gersIdsLinked: number;
+  skipped: number;
+  durationMs: number;
+};
+
+/**
  * Result of a bulk import operation.
  */
 export type OvertureBulkImportResult = {

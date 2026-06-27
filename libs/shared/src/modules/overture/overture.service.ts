@@ -19,6 +19,8 @@ import {
   OvertureImportResult,
   OvertureExportRecord,
   OvertureBulkImportResult,
+  OvertureStreetInput,
+  OvertureStreetsImportResult,
   MatchConfidence,
   GersMatchResult,
 } from './overture.types';
@@ -540,6 +542,99 @@ export class OvertureService {
       gersIdsLinked,
       skipped,
       durationMs,
+    };
+  }
+
+  // ─── Streets Fallback (Transportation theme) ──────────────────────────────
+
+  /**
+   * Import Overture transportation segments into an existing LAB as editable
+   * streets (voies). Each segment becomes a METRIQUE voie carrying its trace
+   * (LineString) and GERS ID, so a clerk gets a browsable street network to
+   * hang numbers on even when the jurisdiction has no Overture address points.
+   *
+   * Streets are inserted in chunks; centroids/bboxes are then computed from each
+   * trace in a single PostGIS pass (METRIQUE voies derive their centroid from
+   * the trace, not from numero positions).
+   */
+  async importStreetsIntoBal(params: {
+    baseLocale: BaseLocale;
+    streets: OvertureStreetInput[];
+    release?: string;
+  }): Promise<OvertureStreetsImportResult> {
+    const { baseLocale, streets } = params;
+    const balId = baseLocale.id;
+    const startTime = Date.now();
+    const CHUNK_SIZE = 500;
+
+    let streetsCreated = 0;
+    let gersIdsLinked = 0;
+    let skipped = 0;
+
+    const voieValues: Partial<Voie>[] = [];
+    for (const street of streets) {
+      const nom = (street.name || '').trim();
+      const coordinates = street.geometry?.coordinates;
+      if (!nom || !Array.isArray(coordinates) || coordinates.length < 2) {
+        skipped++;
+        continue;
+      }
+      voieValues.push({
+        id: new ObjectId().toHexString(),
+        balId,
+        banId: uuid(),
+        nom,
+        typeNumerotation: TypeNumerotationEnum.METRIQUE,
+        trace: {
+          type: 'LineString',
+          coordinates,
+        } as any,
+        gersId: street.gersId || null,
+      });
+      streetsCreated++;
+      if (street.gersId) gersIdsLinked++;
+    }
+
+    for (let i = 0; i < voieValues.length; i += CHUNK_SIZE) {
+      const chunk = voieValues.slice(i, i + CHUNK_SIZE);
+      if (chunk.length === 0) continue;
+      await this.voieRepository
+        .createQueryBuilder()
+        .insert()
+        .into(Voie)
+        .values(chunk)
+        .execute();
+    }
+
+    // Compute centroid + bbox from each trace in one pass (METRIQUE voies).
+    if (streetsCreated > 0) {
+      await this.voieRepository.query(
+        `UPDATE voies
+            SET centroid = ST_Centroid(trace),
+                bbox = ARRAY[
+                  ST_XMin(trace), ST_YMin(trace),
+                  ST_XMax(trace), ST_YMax(trace)
+                ]
+          WHERE bal_id = $1
+            AND type_numerotation = 'metrique'
+            AND trace IS NOT NULL
+            AND centroid IS NULL`,
+        [balId],
+      );
+    }
+
+    this.logger.log(
+      `Imported ${streetsCreated} streets (${gersIdsLinked} GERS-linked, ` +
+        `${skipped} skipped) into LAB ${balId}`,
+    );
+
+    return {
+      balId,
+      fipsCode: baseLocale.commune,
+      streetsCreated,
+      gersIdsLinked,
+      skipped,
+      durationMs: Date.now() - startTime,
     };
   }
 

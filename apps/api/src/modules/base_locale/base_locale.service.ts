@@ -50,6 +50,8 @@ import { UpdateBaseLocaleDTO } from './dto/update_base_locale.dto';
 import { CreateDemoBaseLocaleDTO } from './dto/create_demo_base_locale.dto';
 import { getJurisdictionName } from '@/shared/utils/fips.utils';
 import { PopulateService } from './sub_modules/populate/populate.service';
+import { OvertureService } from '@/shared/modules/overture/overture.service';
+import { OvertureExtractService } from '@/shared/modules/overture/extract/overture-extract.service';
 import { UpdateBaseLocaleDemoDTO } from './dto/update_base_locale_demo.dto';
 import { ImportFileBaseLocaleDTO } from './dto/import_file_base_locale.dto';
 import { RecoverBaseLocaleDTO } from './dto/recover_base_locale.dto';
@@ -80,6 +82,8 @@ export class BaseLocaleService {
     private populateService: PopulateService,
     @Inject(forwardRef(() => BanPlateformService))
     private banPlateformService: BanPlateformService,
+    private readonly overtureService: OvertureService,
+    private readonly overtureExtractService: OvertureExtractService,
     private cacheService: CacheService,
     private readonly logger: Logger,
   ) {}
@@ -212,17 +216,94 @@ export class BaseLocaleService {
     return newDemoBaseLocale;
   }
 
-  async extractAndPopulate(baseLocale: BaseLocale): Promise<BaseLocale> {
+  async extractAndPopulate(
+    baseLocale: BaseLocale,
+    options?: { source?: 'ban' | 'overture'; fips?: string },
+  ): Promise<BaseLocale> {
     const key = `${KEY_POPULATE_BAL_ID}#${baseLocale.id}`;
     await this.cacheService.set(key, '');
-    // On extrait la Bal de l'assemblage BAN ou la derniere revision sur l'api-depot
-    const data: FromCsvType = await this.populateService.extract(
-      baseLocale.commune,
+    try {
+      if (options?.source === 'overture') {
+        await this.populateFromOverture(baseLocale, options.fips);
+      } else {
+        // On extrait la Bal de l'assemblage BAN ou la derniere revision sur l'api-depot
+        const data: FromCsvType = await this.populateService.extract(
+          baseLocale.commune,
+        );
+        // On populate la Bal
+        await this.populate(baseLocale, data);
+      }
+    } finally {
+      await this.cacheService.del(key);
+    }
+    return baseLocale;
+  }
+
+  /**
+   * Populate a freshly-created LAB on demand from Overture Maps.
+   *
+   * Runs a DuckDB extract for the jurisdiction (FIPS), then writes the addresses
+   * into the existing (empty) LAB via the proven bulk-import path in append mode
+   * — carrying GERS IDs and Overture provenance onto every numero.
+   */
+  private async populateFromOverture(
+    baseLocale: BaseLocale,
+    fipsOverride?: string,
+  ): Promise<void> {
+    const fips = (fipsOverride || baseLocale.commune || '').trim();
+    // Clear anything already in the LAB so re-runs are idempotent.
+    await this.numeroService.deleteMany({ balId: baseLocale.id });
+    await this.voieService.deleteMany({ balId: baseLocale.id });
+    await this.toponymeService.deleteMany({ balId: baseLocale.id });
+
+    const { addresses, release } =
+      await this.overtureExtractService.extractCounty(fips);
+
+    // Threshold below which we treat the jurisdiction as having no usable
+    // address points and fall back to seeding the street network instead, so
+    // the editor never opens on a blank map. Default 0 = fall back only when
+    // there are truly no addresses.
+    const fallbackThreshold = process.env.OVERTURE_STREETS_FALLBACK_THRESHOLD
+      ? parseInt(process.env.OVERTURE_STREETS_FALLBACK_THRESHOLD, 10)
+      : 0;
+
+    if (addresses.length > fallbackThreshold) {
+      // Append into the existing LAB (bulkImportFromOverture validates that the
+      // LAB's commune matches the FIPS and reuses streets across chunks).
+      await this.overtureService.bulkImportFromOverture({
+        fipsCode: fips,
+        addresses,
+        release,
+        append: true,
+        balId: baseLocale.id,
+        token: baseLocale.token,
+      });
+      return;
+    }
+
+    // ── Streets fallback (Phase 2): no/few Overture addresses → seed the
+    // editable street network from the Overture Transportation theme. ──────
+    this.logger.warn(
+      `Overture addresses thin for FIPS ${fips} (${addresses.length} found); ` +
+        `falling back to the street network (LAB ${baseLocale.id})`,
+      BaseLocaleService.name,
     );
-    // On populate la Bal
-    const res = await this.populate(baseLocale, data);
-    await this.cacheService.del(key);
-    return res;
+    const { streets } = await this.overtureExtractService.extractStreets(
+      fips,
+      release,
+    );
+    if (streets.length === 0) {
+      this.logger.warn(
+        `Overture returned no streets either for FIPS ${fips} (LAB ${baseLocale.id})`,
+        BaseLocaleService.name,
+      );
+      return;
+    }
+    await this.overtureService.importStreetsIntoBal({
+      baseLocale,
+      streets,
+      release,
+    });
   }
 
   async isPopulating(baseLocale: BaseLocale): Promise<boolean> {
